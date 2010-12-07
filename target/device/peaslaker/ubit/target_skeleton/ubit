@@ -122,10 +122,9 @@
 		echo "     - flash             # flash writes ubifs images - resets the install media after installation, ready to go again"  
 		echo
 		echo "Firmware installation macros"
-		echo "     - orig_dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
-		echo "     - orig_goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
-		echo "     - goflexnet [reset] # install the up to date goflexnet u-boot to mtd0, reset the environment"
-		echo "     - dockstar [reset]  # install the up to date dockstar u-boot to mtd0, reset the environment"
+		echo "     - dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
+		echo "     - goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
+		echo "     - ubit [reset] # install the up to date ubit u-boot to mtd0, reset the environment"
 		echo
 		echo "Boot sequence adjustments"
 		echo "     - nc_off            # switch U-Boot network console off"
@@ -257,19 +256,13 @@ while read option; do
 			"flash-full")
 				. /ubit.flash
 				;;
+			"ubit-full"|"ubit-aufs")
+				. /ubit.u-boot
+				;;
 			"dockstar-full"|"dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"default-full"|"default-aufs")
-				. /ubit.u-boot
-				;;
 			"goflexnet-full"|"goflexnet-aufs")
-				. /ubit.u-boot
-				;;
-			"orig_dockstar-full"|"orig_dockstar-aufs")
-				. /ubit.u-boot
-				;;
-			"orig_goflexnet-full"|"orig_goflexnet-aufs")
 				. /ubit.u-boot
 				;;
 			"ubiargs_default-full"|"ubiargs_default-aufs")

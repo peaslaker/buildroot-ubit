@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot version: 2010.11-00020-g2742384-dirty
-# Tue Dec  7 13:39:07 2010
+# Buildroot version: 2010.11-00021-gf122db2-dirty
+# Tue Dec  7 15:20:50 2010
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_arm=y
@@ -142,12 +142,12 @@ BR2_EXTRA_BINUTILS_CONFIG_OPTIONS=""
 # GCC Options
 #
 # BR2_GCC_VERSION_4_2_4 is not set
-BR2_GCC_VERSION_4_3_X=y
+# BR2_GCC_VERSION_4_3_X is not set
 # BR2_GCC_VERSION_4_4_X is not set
-# BR2_GCC_VERSION_4_5_X is not set
+BR2_GCC_VERSION_4_5_X=y
 # BR2_GCC_VERSION_SNAP is not set
 BR2_GCC_SUPPORTS_FINEGRAINEDMTUNE=y
-BR2_GCC_VERSION="4.3.5"
+BR2_GCC_VERSION="4.5.1"
 BR2_EXTRA_GCC_CONFIG_OPTIONS=""
 # BR2_GCC_CROSS_OBJC is not set
 # BR2_GCC_CROSS_FORTRAN is not set
@@ -867,7 +867,7 @@ BR2_PACKAGE_ZLIB=y
 # Target filesystem options
 #
 BR2_ROOTFS_POST_BUILD_SCRIPT="target/device/peaslaker/ubit/post_build"
-BR2_ROOTFS_DEVICE_TABLE="target/generic/device_table.txt"
+BR2_ROOTFS_DEVICE_TABLE=""
 # BR2_ROOTFS_SKELETON_DEFAULT is not set
 BR2_ROOTFS_SKELETON_CUSTOM=y
 BR2_ROOTFS_SKELETON_CUSTOM_PATH="target/device/peaslaker/ubit/target_skeleton"

@@ -58,7 +58,7 @@ else # we are in maintenance mode
 			exit 1
 			}
 		done
-		) && echo default | /ubit -full
+		) && echo ubit | /ubit -full
 
 	echo mounting whatever we find on /dev/sda1
 	sleep 10

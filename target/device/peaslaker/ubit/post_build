@@ -1,7 +1,10 @@
 #!/bin/bash
-dd if=output/images/u-boot.kwb of=output/target/goflexnet.kwb bs=512K conv=sync
-(	cd output target
-	cat goflexnet.kwb | md5sum > valid.goflexnet.md5
-	md5sum ./goflexnet.kwb >> kwb.md5
+dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=512K conv=sync
+(	cd output/target
+	cat ubit.kwb | md5sum > valid.ubit.md5
+	md5sum ./ubit.kwb >> kwb.md5
+	rm -rf dev/*
+	mknod dev/console b 5 1
+	mknod dev/null b 1 3
 	find . | cut -d'.' -f 2- > cpio_list
 	)
