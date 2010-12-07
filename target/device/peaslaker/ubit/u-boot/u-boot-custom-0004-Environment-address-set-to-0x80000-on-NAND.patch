@@ -1,0 +1,28 @@
+From 22f96616515a427d07222322a7e8730c03761b58 Mon Sep 17 00:00:00 2001
+From: Peter Carmichael <peterjncarm@ovi.com>
+Date: Fri, 3 Dec 2010 14:15:52 +0000
+Subject: [PATCH] Environment address set to 0x80000 on NAND
+
+---
+ tools/env/fw_env.config |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/tools/env/fw_env.config b/tools/env/fw_env.config
+index c8f12cf..efe6436 100644
+--- a/tools/env/fw_env.config
++++ b/tools/env/fw_env.config
+@@ -4,8 +4,9 @@
+ # Notice, that the "Number of sectors" is ignored on NOR.
+ 
+ # MTD device name	Device offset	Env. size	Flash sector size	Number of sectors
+-/dev/mtd1		0x0000		0x4000		0x4000
+-/dev/mtd2		0x0000		0x4000		0x4000
++#/dev/mtd1		0x0000		0x4000		0x4000
++#/dev/mtd2		0x0000		0x4000		0x4000
+ 
+ # NAND example
+ #/dev/mtd0		0x4000		0x4000		0x20000			2
++/dev/mtd0		0x80000		0x20000		0x20000
+-- 
+1.5.6.5
+

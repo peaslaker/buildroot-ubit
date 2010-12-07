@@ -1,0 +1,28 @@
+From 88dd94c6108d0ab32aec408372263a43ffcf5e0e Mon Sep 17 00:00:00 2001
+From: root <root@vmdebian-cli.private>
+Date: Thu, 25 Nov 2010 10:14:24 +0000
+Subject: [PATCH] Conditional declaration for one LUN per IDE channel
+
+---
+ include/ide.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/include/ide.h b/include/ide.h
+index 6a1b7ae..0b4d989 100644
+--- a/include/ide.h
++++ b/include/ide.h
+@@ -24,7 +24,11 @@
+ #ifndef	_IDE_H
+ #define _IDE_H
+ 
++#ifndef CONFIG_IDE_ONE_LUN_PER_CHANNEL
+ #define	IDE_BUS(dev)	(dev >> 1)
++#else
++#define	IDE_BUS(dev)	(dev)
++#endif
+ 
+ #define	ATA_CURR_BASE(dev)	(CONFIG_SYS_ATA_BASE_ADDR+ide_bus_offset[IDE_BUS(dev)])
+ 
+-- 
+1.5.6.5
+

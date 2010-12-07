@@ -1,0 +1,47 @@
+From 7ff3524f47fefd425067a969fe7e5b7c8035f5b8 Mon Sep 17 00:00:00 2001
+From: root <root@vmdebian-cli.private>
+Date: Thu, 25 Nov 2010 10:52:43 +0000
+Subject: [PATCH] Static build tools and free resetting of ethaddr and #serial
+
+---
+ tools/env/Makefile |    3 ++-
+ tools/env/fw_env.c |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/env/Makefile b/tools/env/Makefile
+index 2df631e..35474a5 100644
+--- a/tools/env/Makefile
++++ b/tools/env/Makefile
+@@ -26,7 +26,8 @@ include $(TOPDIR)/config.mk
+ SRCS	:= $(obj)crc32.c  fw_env.c  fw_env_main.c
+ HEADERS	:= fw_env.h
+ 
+-CPPFLAGS := -Wall -DUSE_HOSTCC -I$(SRCTREE)/include
++CPPFLAGS := -static -Wall -DUSE_HOSTCC -I$(SRCTREE)/include
++#CPPFLAGS := -Wall -DUSE_HOSTCC -I$(SRCTREE)/include
+ 
+ ifeq ($(MTD_VERSION),old)
+ CPPFLAGS += -DMTD_OLD
+diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
+index 8ff7052..4fa1bae 100644
+--- a/tools/env/fw_env.c
++++ b/tools/env/fw_env.c
+@@ -393,13 +393,14 @@ int fw_env_write(char *name, char *value)
+ 		/*
+ 		 * Ethernet Address and serial# can be set only once
+ 		 */
++/*
+ 		if ((strcmp (name, "ethaddr") == 0) ||
+ 			(strcmp (name, "serial#") == 0)) {
+ 			fprintf (stderr, "Can't overwrite \"%s\"\n", name);
+ 			errno = EROFS;
+ 			return -1;
+ 		}
+-
++*/
+ 		if (*++nxt == '\0') {
+ 			*env = '\0';
+ 		} else {
+-- 
+1.5.6.5
+
