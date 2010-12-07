@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot version: 2010.11-00022-g62de9ae-dirty
-# Tue Dec  7 17:11:35 2010
+# Buildroot version: 2010.11-00024-gfb1154a-dirty
+# Tue Dec  7 20:50:18 2010
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_arm=y
@@ -878,9 +878,9 @@ BR2_ROOTFS_SKELETON_CUSTOM_PATH="target/device/peaslaker/ubit/target_skeleton"
 # BR2_TARGET_ROOTFS_UBIFS is not set
 # BR2_TARGET_ROOTFS_SQUASHFS is not set
 # BR2_TARGET_ROOTFS_TAR is not set
-BR2_TARGET_ROOTFS_CPIO=y
+# BR2_TARGET_ROOTFS_CPIO is not set
 # BR2_TARGET_ROOTFS_CPIO_NONE is not set
-BR2_TARGET_ROOTFS_CPIO_GZIP=y
+# BR2_TARGET_ROOTFS_CPIO_GZIP is not set
 # BR2_TARGET_ROOTFS_CPIO_BZIP2 is not set
 # BR2_TARGET_ROOTFS_CPIO_LZMA is not set
 
