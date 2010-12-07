@@ -28,19 +28,17 @@ while [ "$1" ]; do
 mkdir -p rw
 if [ -z "$rescue" ] && [ "$useubi" ]; then
 	[ "$rtype" ] || rtype=auto
+	[ "$rpath" ] || rpath=/dev/sda1
 	[ "$rdelay" ] && sleep $rdelay
 	case "$rtype" in
 		"tmpfs")
 			mount -t tmpfs none rw
 			;;
-		"ubifs")
-			mount -t ubifs ubi:rootfs rw -o rw,relatime || mount -t tmpfs none rw
-			;;
 		"auto")
-			mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
+			mount -t ubifs ubi:rw rw -o rw,relatime || mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
 			;;
 		*)
-			mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
+			mount -t ubifs ubi:rw rw -o rw,relatime || mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
 			;;
 		esac	
 
@@ -48,11 +46,6 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 	cd rw
 	# but this is where we try to come up with a clever aufs stacked filesystem
 	. /init.aufs
-
-	# if wherever we have ended up has a file containing ubit options and we have ubit, we process them now but we limit the options
-	# because we have a mounted aufs partition
-
-	[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -aufs
 
 else # we are in maintenance mode
 

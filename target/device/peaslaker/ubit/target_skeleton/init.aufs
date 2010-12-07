@@ -14,18 +14,27 @@ move_mounts () {
 		done
 	}
 
-case "$rtype" in
-	"ubifs")
-		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
-		mount -t aufs aufs ../newroot -o br:../rw=rw:../modules=rr && \
-		cd ../newroot && move_mounts rw modules && \
-		[ -e /.ubit.extramounts ] && . /.ubit.extramounts
-		;;
-	*)
-		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
-		mount -t ubifs ubi:rootfs ../rootfs -o ro,noatime && \
-		mount -t aufs aufs ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr && \
-		cd ../newroot && move_mounts rw rootfs modules && \
-		[ -e /.ubit.extramounts ] && . /.ubit.extramounts
-  		;;
-	esac	
+mount -t ubifs ubi:modules ../modules -o ro,noatime && \
+mount -t ubifs ubi:rootfs ../rootfs -o ro,noatime && \
+mount -t aufs aufs ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr
+
+for prt in `cat /.ubit.ubimounts`; do
+	mkdir ../$prt
+	mount -t ubifs ubi:$prt ../$prt -o ro,noatime 
+	mount ../newroot -o remount,append:../${prt}=rr
+	done
+
+cd ../newroot
+
+# if we have a file containing ubit options and we have ubit, we process them now but we limit the options
+# because we have a mounted aufs partition.
+
+[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -aufs
+
+move_mounts rw rootfs modules
+
+for prt in `cat /.ubit.ubimounts`; do
+	move_mounts $prt
+	done
+
+[ -e /.ubit.extramounts ] && . /.ubit.extramounts
