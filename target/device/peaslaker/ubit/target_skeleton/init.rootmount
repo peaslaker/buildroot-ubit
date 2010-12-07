@@ -69,11 +69,11 @@ else # we are in maintenance mode
 		for o in /orig.*.md5 ; do
 			cat /tmp/tmpdump | md5sum -c $o -s && {
 				target=${o#*orig.};
-				echo ${target%.md5} reset | /ubit
+				echo ${target%.md5} | /ubit -full
 				exit 1
 				}
 			done
-		) && echo default reset | /ubit
+		) && echo default | /ubit -full
 
 
 	echo mounting whatever we find on /dev/sda1
@@ -82,7 +82,7 @@ else # we are in maintenance mode
 	(	
 		cd rw
 		# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
-		[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.action .ubit.last | /ubit -rw
+		[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.action .ubit.last | /ubit -full
 		)  # drop back out of rw
 
 	umount /dev/sda1

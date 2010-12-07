@@ -115,7 +115,7 @@
 		echo "     - install [password]# partition the contents of rootfs.tar.gz, modules.tar.gz and boot.tar.gz onto ubifs partitions"
 		echo "     - kernel            # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
 		echo "     - flash_once        # flash writes ubifs images - must be invoked within the matched installer"
-		echo "     - flash_multiple    # flash writes ubifs images - resets the install media after installation, ready to go again"  
+		echo "     - flash             # flash writes ubifs images - resets the install media after installation, ready to go again"  
 		echo
 		echo "Firmware installation macros"
 		echo "     - orig_dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
@@ -128,6 +128,7 @@
 		echo "     - nc_on             # switch U-Boot network console on (default 10.10.10.5)" 
 		echo "     - fastboot          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
 		echo "     - normal            # switches on boot from UBIFS as the default"
+		echo "     - ethaddr           # sets the 'ethaddr' variable in the bootloader environment.  Mac address will change at random unless forced"
 		echo 
 		echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
 		echo 
@@ -156,7 +157,7 @@ while read option; do
 	if {	[ -z `cat /.ubit.password` ] || { pwd=$1; shift; echo $pwd | md5sum -c /.ubit.password -s; }; }; then	
 		echo UBIT:${option}
 		case "$1$subset" in
-			"on-rw"|"on-aufs")
+			"on-full"|"on-aufs")
 				( cd /workarea
 					uniq=`ls | md5sum`
 					uniq=${uniq%% *}
@@ -171,7 +172,7 @@ while read option; do
 					rm -rf $uniq
 					)	
 				;;
-			"to-rw"|"to-aufs")
+			"to-full"|"to-aufs")
 					uniq=`ls /workarea | md5sum`
 					uniq=${uniq%% *}
 					mkdir /workarea/$uniq
@@ -184,34 +185,34 @@ while read option; do
 					umount /workarea/$uniq
 					rm -rf /workarea/$uniq
 				;;
-			"snapshot-rw"|"snapshot-aufs")
+			"snapshot-full"|"snapshot-aufs")
 	                        [ "$2" ] && {
                         	        echo setting password
                                 	echo $2 | md5sum > /.ubit.password
 					}
 				. /ubit.snapshot
 				;;
-			"prepare-rw")
+			"prepare-full")
 	                        [ "$2" ] && {
                         	        echo setting password
                                 	echo $2 | md5sum > /.ubit.password
 					}
 				. /ubit.prepare
 				;;
-			"install_on_reboot-rw"|"install_on_reboot-aufs")
+			"install_on_reboot-full"|"install_on_reboot-aufs")
 				echo ubiattach_mtd3 > $outdir/.ubit.oneshot
 				echo flash_once >> $outdir/.ubit.oneshot
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
-			"ubiformat_mtd3-rw")
+			"ubiformat_mtd3-full")
 				ubidetach /dev/ubi_ctrl -m 3
 				ubiformat /dev/mtd3
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
-			"ubiattach_mtd3-rw")
+			"ubiattach_mtd3-full")
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
-			"install-rw")
+			"install-full")
 	                        [ "$2" ] && {
                         	        echo setting password
                                 	echo $2 | md5sum > /.ubit.password
@@ -219,47 +220,50 @@ while read option; do
 				. /ubit.prepare && . /ubit.flash
 				rm -rf .ubit
 				;;
-			"kernel-rw")
+			"kernel-full")
 				. /ubit.kernel
 				;;
-			"flash_once-rw")
+			"flash_once-full")
 				rm $outdir/uInitrd
 				. /ubit.flash
 				;;
-			"flash-rw")
+			"flash-full")
 				. /ubit.flash
 				;;
-			"dockstar-rw"|"dockstar-aufs")
+			"dockstar-full"|"dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"default-rw"|"default-aufs")
+			"default-full"|"default-aufs")
 				. /ubit.u-boot
 				;;
-			"goflexnet-rw"|"goflexnet-aufs")
+			"goflexnet-full"|"goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_dockstar-rw"|"orig_dockstar-aufs")
+			"orig_dockstar-full"|"orig_dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_goflexnet-rw"|"orig_goflexnet-aufs")
+			"orig_goflexnet-full"|"orig_goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"nc_off-rw"|"nc_off-aufs")
+			"nc_off-full"|"nc_off-aufs")
 				fw_setenv preboot
 				;;
-			"nc_on-rw"|"nc_on-aufs")
+			"nc_on-full"|"nc_on-aufs")
 				fw_setenv preboot 'run nc_test nc_start'
 				;;
-			"fastboot-rw"|"fastboot-aufs")
-				fw_setenv bootcmd 'ubi part_ubi; run bootcmd_fast'
+			"fastboot-full"|"fastboot-aufs")
+				fw_setenv bootcmd 'ubi part ubi; run bootcmd_fast'
 				;;
-			"normal-rw"|"normal-aufs")
-				fw_setenv bootcmd 'ubi part_ubi; run bootcmd_go'
+			"normal-full"|"normal-aufs")
+				fw_setenv bootcmd 'ubi part ubi; run bootcmd_go'
 				;;
-			"exit-rw"|"exit-aufs")
+			"ethaddr-full"|"ethaddr-aufs")
+				fw_setenv ethaddr $2
+				;;
+			"exit-full"|"exit-aufs")
 				exit 1
 				;;
-			"help-rw"|"help-aufs"|"help")
+			"help-full"|"help-aufs"|"help")
 				usage
 				;;
 			*)
