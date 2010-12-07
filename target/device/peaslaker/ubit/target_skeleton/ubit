@@ -192,7 +192,7 @@ while read option; do
 				;;
 			"template-full"|"template-aufs")
 	                        if [ "$2" ]; then
-					[ -e "/targets.$2 ] && cat "/targets.$2" > .ubit.targets
+					[ -e "/targets.$2" ] && cat "/targets.$2" > .ubit.targets
 				else
 					rm .ubit.targets
 					fi

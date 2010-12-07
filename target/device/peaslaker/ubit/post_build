@@ -5,3 +5,7 @@ dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=512K conv=sync
 	md5sum ubit.kwb >> kwb.md5
 	find . | cut -d'.' -f 2- > cpio_list
 	)
+
+ver=`cat output/target/etc/issue`
+
+mkimage -A arm -O linux -T ramdisk -a 0x0 -e 0x0 -n "${ver}" -d output/images/rootfs.cpio.gz output/images/uInitrd 
