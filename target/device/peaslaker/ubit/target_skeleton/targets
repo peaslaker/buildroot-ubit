@@ -6,10 +6,6 @@ media inst
 media
 var/log op
 var/log
-var/cache op
-var/cache
-var/lib op
-var/lib
 var/lib/pacman ubi pkg
 var/cache/pacman ubi pkg
 root

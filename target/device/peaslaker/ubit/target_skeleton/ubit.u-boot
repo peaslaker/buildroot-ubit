@@ -6,11 +6,15 @@ echo Keep your mtd0 backups safe.
 echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
 
-nanddump -no -l 0x80000 -f mtd0 /dev/mtd0
-backupsuffix=`md5sum mtd0`
-backupsuffix=${backupsuffix%% *}
-mv mtd0 mtd0.$backupsuffix
-nanddump -n -l 0x80000 -f mtd0.oob.${backupsuffix} /dev/mtd0
+(
+	cd $outdir
+	nanddump -no -l 0x80000 -f mtd0 /dev/mtd0
+	backupsuffix=`md5sum mtd0`
+	backupsuffix=${backupsuffix%% *}
+	mv mtd0 mtd0.$backupsuffix
+	nanddump -n -l 0x80000 -f mtd0.oob.${backupsuffix} /dev/mtd0
+
+	)
 
 echo UBIT.U-BOOT: erasing u-boot
 flash_erase /dev/mtd0 0 4
