@@ -8,6 +8,11 @@
 	rm /tmp/.scanimages
 	rm /.ubit.images
 	rm /.ubit.extramounts
+	rm /.ubit.rename
+	touch /.ubit.images
+	touch /.ubit.extramounts
+	touch /.ubit.rename
+
 	rm .ubit.images
 	sort -r $targs | while true; do 
 		read pth prt ubiprt
@@ -74,10 +79,13 @@
 					rename="$rename ${prt}${suffix} ${prt}"
 					fi
 				done
+
 			# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
 			mkdir -p .ubit/ramdisk
 			cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n 'ubit' -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+
+			[ "$rename" ] && echo $rename > /.ubit.rename
 	
 			echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 			echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
@@ -87,7 +95,6 @@
 					ubimg $lebcnt
 					)
 				done
-
 			break
 		fi
 

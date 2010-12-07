@@ -1,16 +1,26 @@
 	echo UBIT.KERNEL:purging old work environment...
-	rm -rf .ubit
-	mkdir -p .ubit/rootfs
-
 	uni="boot modules"
 	targs=/targets.kernel
 	suffix=.new
 	backup=.bak
 
-	mount --bind . .ubit/rootfs && . /ubit.scan && ./ubit.flash
-	umount .ubit/rootfs
-	rm -rf .ubit
+	echo UBIT.KERNEL:extracting boot...
 
+		# this is about to take a long time
+		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+		echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
 
+	rm -rf $outdir/.ubit
+	mkdir -p $outdir/.ubit/boot $outdir/.ubit/rootfs
 
+	# this is a little bit hard coded
+	tar -c boot  | tar -C $outdir/.ubit/rootfs -x 
+	tar -c lib/modules   | tar -C $outdir/.ubit/rootfs -x 
 
+	(
+		cd $outdir
+		. /ubit.scan
+
+		cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+		)

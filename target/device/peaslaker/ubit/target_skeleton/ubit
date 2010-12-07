@@ -38,8 +38,6 @@
 #                               system should contain initialisation processes to replace the contents of these directories)
 #       - inst 		- usually this means /opt, but in general it separates out installed packages that are not intended 
 #                  		to reside on the target Flash installed system
-#       - mountpoints 	- these are truncated and discarded, usually consisting of the locations where the system 
-#				mounts subsidiary file systems.  e.g. /tmp /mnt /net /proc /dev /sys /var/run
 #	- modules	- the branch under /lib/modules
 #	- boot		- the branch under /boot, stripped of the /boot
 #
@@ -101,105 +99,176 @@
 	
 		}
 
-	echo The following special macro instructions are supported by the /ubit script:
-	echo "     - ubiattach_mtd3    # attach mtd3 as a ubi partition"
-	echo "     - ubiformat_mtd3    # format mtd3 as a ubi partition"
-	echo "     - install [password]# partition the contents of rootfs.tar.gz, modules.tar.gz and boot.tar.gz onto ubifs partitions"
-	echo "     - kernel            # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
-	echo "     - orig_dockstar     # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
-	echo "     - orig_goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
-	echo "     - goflexnet [reset] # install the up to date goflexnet u-boot to mtd0, reset the environment"
-	echo "     - dockstar [reset]  # (tbc) install the up to date dockstar u-boot to mtd0, reset the environment"
-	echo "     - nc_off            # switch network console off"
-	echo "     - nc_on             # switch network console on (default 10.0.0.1)" 
-	echo "     - disable           # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
-	echo "     - enable            # switches on boot from UBIFS as the default"
-	echo "     - exit              # exit the $0 script"
-	echo 
-	echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
-	echo 
-	echo Generally, the Orange LED is used to signal the degree of activity.  
-	echo For example in the install process, when the script is actively scanning
-	echo the source material, the orange LED should flash fast.  When it is engaged
-	echo in the big atomic commands for echo creating UBIFS images, it flashes slowly.
-	echo When it is at a prompt, the green heartbeat is healthy, the orange heartbeat 
-	echo indicates a need to intervene before rebooting because you have a brick on 
-	echo your hands.
-	echo 
+	usage () {
+		echo The following special macro instructions are supported by the /ubit script.
+		echo
+		echo Install preparation macros
+		echo "     - on [device] [macro] # specify a block device other than /dev/sda1 to be used as the working area for the command
+		echo "     - to [device] [macro] # specify a block device other than /dev/sda1 to be used as the output area for the command
+		echo "     - snapshot [password] # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
+		echo "     - prepare [password]# creates ubifs images and matched installer ramdisk from rootfs.tar.gz, modules.tar.gz and boot.tar.gz"
+		echo "     - install_on_reboot # sets ubifs images and matched installer ready for use on next reboot; sets installer as uInitrd and runs flash_once"
+		echo
+		echo Install execution macros (need to be run by ramdisk launched from external install media)
+		echo "     - ubiformat_mtd3    # format mtd3 as a ubi partition"
+		echo "     - ubiattach_mtd3    # attach mtd3 as a ubi partition"
+		echo "     - install [password]# partition the contents of rootfs.tar.gz, modules.tar.gz and boot.tar.gz onto ubifs partitions"
+		echo "     - kernel            # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
+		echo "     - flash_once        # flash writes ubifs images - must be invoked within the matched installer"
+		echo "     - flash_multiple    # flash writes ubifs images - resets the install media after installation, ready to go again"  
+		echo
+		echo Firmware installation macros
+		echo "     - orig_dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
+		echo "     - orig_goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
+		echo "     - goflexnet [reset] # install the up to date goflexnet u-boot to mtd0, reset the environment"
+		echo "     - dockstar [reset]  # install the up to date dockstar u-boot to mtd0, reset the environment"
+		echo
+		echo Boot sequence adjustments
+		echo "     - nc_off            # switch U-Boot network console off"
+		echo "     - nc_on             # switch U-Boot network console on (default 10.10.10.5)" 
+		echo "     - fastboot          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
+		echo "     - normal            # switches on boot from UBIFS as the default"
+		echo 
+		echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
+		echo 
+		echo Generally, the Orange LED is used to signal the degree of activity.  
+		echo For example in the install process, when the script is actively scanning
+		echo the source material, the orange LED should flash fast.  When it is engaged
+		echo in the big atomic commands for echo creating UBIFS images, it flashes slowly.
+		echo When it is at a prompt, the green heartbeat is healthy, the orange heartbeat 
+		echo indicates a need to intervene before rebooting because you have a brick on 
+		echo your hands.
+		echo 
+		}
+
+
 
 
 subset=$1
+outdir=$2
+[ "$outdir" ] && outdir=`pwd`
+[ -n "$subset" ] && usage
 
 echo UBIT:ready
 while read option; do
 	echo timer > /sys/class/leds/status\:orange\:misc/trigger
 	set -- $option
-	if {	[ ! -e /password.md5 ] || { pwd=$1; shift; echo $pwd | md5sum -c /password.md5 -s; }; }; then	
+	if {	[ -z `cat /.ubit.password` ] || { pwd=$1; shift; echo $pwd | md5sum -c /.ubit.password -s; }; }; then	
 		echo UBIT:${option}
 		case "$1$subset" in
-			"ubiformat_mtd3")
+			"on-rw"|"on-aufs")
+				( cd /workarea
+					uniq=`ls | md5sum`
+					uniq=${uniq%% *}
+					mkdir $uniq
+					mount "$2" $uniq && ( cd $uniq
+						echo UBIT:operating on $2
+						shift
+						shift
+						echo $@ | /ubit $subset
+						)
+					umount $uniq
+					rmdir $uniq
+					)	
+				)
+				;;
+			"to-rw"|"to-aufs")
+					uniq=`ls /workarea | md5sum`
+					uniq=${uniq%% *}
+					mkdir /workarea/$uniq
+					mount "$2" $uniq && (
+						echo UBIT:output to $2
+						shift
+						shift
+						echo $@ | /ubit $subset /workarea/$uniq
+						)
+					umount /workarea/$uniq
+					rmdir /workarea/$uniq
+					)	
+				)
+				;;
+			"snapshot-rw"|"snapshot-aufs")
+	                        [ "$2" ] && {
+                        	        echo setting password
+                                	echo $2 | md5sum > /.ubit.password
+					}
+				. /ubit.snapshot
+				;;
+			"prepare-rw")
+	                        [ "$2" ] && {
+                        	        echo setting password
+                                	echo $2 | md5sum > /.ubit.password
+					}
+				. /ubit.prepare
+				;;
+			"install_on_reboot-rw"|"install_on_reboot-aufs")
+				echo ubiattach_mtd3 >> $outdir/.ubit.action
+				echo flash_once >> $outdir/.ubit.action
+				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				;;
+			"ubiformat_mtd3-rw")
 				ubidetach /dev/ubi_ctrl -m 3
 				ubiformat /dev/mtd3
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
-			"ubiattach_mtd3")
+			"ubiattach_mtd3-rw")
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
-			"snapshot"|"snapshot-aufs")
-				. /ubit.snapshot
-				cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "installer for snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
-				;;
-			"install_on_reboot"|"install_on_reboot-aufs")
-				echo ubiattach_mtd3 >> .ubit.action
-				echo flash_images >> .ubit.action
-				cp .ubit/uInstaller uInitrd
-				;;
-			"flash_images"")
-				. /ubit.flash
-				;;
-			"install")
+			"install-rw")
 	                        [ "$2" ] && {
                         	        echo setting password
-                                	echo $2 | md5sum > /password.md5
+                                	echo $2 | md5sum > /.ubit.password
 					}
-				. /ubit.install
+				. /ubit.prepare && . /ubit.flash
+				rm -rf .ubit
 				;;
-			"kernel")
+			"kernel-rw")
 				. /ubit.kernel
 				;;
-			"dockstar"|"dockstar-aufs")
+			"flash_once-rw")
+				rm uInitrd
+				. /ubit.flash
+				;;
+			"flash_multiple-rw")
+				. /ubit.flash
+				echo ubiattach_mtd3 >> /$outdir/.ubit.action
+				echo flash_multiple >> /$outdir/.ubit.action
+				;;
+			"dockstar-rw"|"dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"default"|"default-aufs")
+			"default-rw"|"default-aufs")
 				. /ubit.u-boot
 				;;
-			"goflexnet"|"goflexnet-aufs")
+			"goflexnet-rw"|"goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_dockstar"|"orig_dockstar-aufs")
+			"orig_dockstar-rw"|"orig_dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_goflexnet"|"orig_goflexnet-aufs")
+			"orig_goflexnet-rw"|"orig_goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"nc_off"|"nc_off-aufs")
+			"nc_off-rw"|"nc_off-aufs")
 				fw_setenv preboot
 				;;
-			"nc_on"|"nc_on-aufs")
+			"nc_on-rw"|"nc_on-aufs")
 				fw_setenv preboot 'run nc_test nc_start'
 				;;
-			"disable"|"disable-aufs")
-				ubirename /dev/ubi0 ramdisk disabled
+			"fastboot-rw"|"fastboot-aufs")
+				fw_setenv bootcmd 'ubi part_ubi; run bootcmd_fast'
 				;;
-			"enable"|"enable-aufs")
-				ubirename /dev/ubi0 disabled ramdisk
+			"normal-rw"|"normal-aufs")
+				fw_setenv bootcmd 'ubi part_ubi; run bootcmd_go'
 				;;
-			"exit|"exit-aufs")
+			"exit-rw"|"exit-aufs")
 				exit 1
 				;;
+			"help-rw"|"help-aufs"|"help")
+				usage
+				;;
 			*)
-				echo UBIT:$1:invalid instruction
+				echo UBIT:$1:unrecognised instruction
 				;;
 			esac
 		fi

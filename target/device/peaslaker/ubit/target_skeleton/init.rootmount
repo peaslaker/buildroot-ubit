@@ -3,7 +3,7 @@
 # triggers the process that sets up the necessary ubi nand partition from tarballs provided on the nominal root device.
 
 
-set - `cat .cmdline`
+set - `cat /proc/cmdline`
 while [ "$1" ]; do
 	case "${1%%=*}" in
 	"root")
@@ -28,6 +28,7 @@ while [ "$1" ]; do
 mkdir -p rw
 if [ -z "$rescue" ] && [ "$useubi" ]; then
 	[ "$rtype" ] || rtype=auto
+	[ "$rdelay" ] && sleep $rdelay
 	case "$rtype" in
 		"tmpfs")
 			mount -t tmpfs none rw
@@ -42,7 +43,6 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 			mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
 			;;
 		esac	
-	[ "$rdelay" ] && sleep $rdelay
 
 	# this is a significant cd.  If nothing else happens, this will be our rootfs, come switch_root time.
 	cd rw
@@ -52,11 +52,7 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 	# if wherever we have ended up has a file containing ubit options and we have ubit, we process them now but we limit the options
 	# because we have a mounted aufs partition
 
-	if { [ -x /ubit ] && [ -e .ubit.action ]; } then
-		cat .ubit.action > .ubit.last
-		rm .ubit.action
-		cat .ubit.last | /ubit -aufs
-		fi
+	[ -x /ubit ] && [ -e .ubit.action ] && cat .ubit.action > .ubit.last && rm .ubit.action && cat .ubit.last | /ubit -aufs
 
 else # we are in maintenance mode
 
@@ -81,17 +77,12 @@ else # we are in maintenance mode
 
 
 	echo mounting whatever we find on /dev/sda1
-	mount /dev/sda1 rw
 	sleep 10
+	mount /dev/sda1 rw
 	(	
 		cd rw
-
 		# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
-		elif { [ -x /ubit ] && [ -e .ubit.action ]; } then
-			cat .ubit.action > .ubit.last
-			rm .ubit.action
-			cat .ubit.last | /ubit
-			fi
+		[ -x /ubit ] && [ -e .ubit.action ] && cat .ubit.action > .ubit.last && rm .ubit.action && cat .ubit.last | /ubit -rw
 		)  # drop back out of rw
 
 	umount /dev/sda1
@@ -102,10 +93,7 @@ else # we are in maintenance mode
 	echo
 	echo The /ubit shell contains a number of useful macros for working with 
 	echo UBI/UBIFS linux installs.  You can either work interactively 
-	echo with UBIT by running /ubit directly or you can provide a script. You 
-	echo can place a sequence of /ubit macro instructions in the file .ubit.action 
-	echo in the root of the /dev/sda1 partition, unmount the partition and then
-	echo hit ctrl-D
+	echo with UBIT by running /ubit directly or you can provide a script.
 	echo
 	echo The /ubit shell needs working space for most of its macros.  You should mount
 	echo a device and cd into the device before running UBIT macros.  It is your responsibility
@@ -116,11 +104,6 @@ else # we are in maintenance mode
 	echo ubiattach_mtd3
 	echo install [password]
 	echo
-	echo You can also place some sensible values in the file .cmdline and 
-	echo when done hit ctrl-D to retry the rootmount/boot process
-	echo the values for root= rootfstype= rootdelay= and ubi.mtd=
-	echo all have a bearing on the startup behaviour.
-	echo 
 	echo LED flash sequences:
 	echo 
 	echo If you see an Orange heartbeat, this is bad news.  It means the device 

@@ -1,0 +1,21 @@
+	echo UBIT.PREPARE:purging old work environment...
+	uni="boot modules rootfs ramdisk"
+	targs=/targets
+	[ -e .ubit.targets ] && targs=.ubit.targets
+
+	echo UBIT.PREPARE:extracting rootfs...
+
+		# this is about to take a long time
+		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+		echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
+
+	rm -rf $outdir/.ubit $outdir/.prt
+	mkdir -p $outdir/.ubit/rootfs $outdir/.prt
+
+	tar -C $outdir/.ubit/rootfs -xzf rootfs.tar.gz && ( 
+		cd $outdir 
+		. /ubit.scan
+
+		cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT prepared images" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+		)
