@@ -2,7 +2,7 @@ usr/share/doc ubi doc
 usr/share/man ubi doc
 opt inst
 opt
-media inst
+media tmpfs
 media
 var/log op
 var/log
@@ -19,3 +19,7 @@ tmp tmpfs
 var/run tmpfs
 lib/modules ubi modules
 boot ubi boot
+var/spool/cronstamps tmpfs
+var/spool/cronstamps
+var/lib/dhcpcd tmpfs
+var/lib/dhcpcd
