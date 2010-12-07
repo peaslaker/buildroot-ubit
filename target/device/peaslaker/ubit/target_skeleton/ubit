@@ -177,7 +177,7 @@ while read option; do
 					uniq=`ls /workarea | md5sum`
 					uniq=${uniq%% *}
 					mkdir /workarea/$uniq
-					mount "$2" $uniq && (
+					mount "$2" /workarea/$uniq && (
 						echo UBIT:output to $2
 						shift
 						shift
@@ -193,13 +193,6 @@ while read option; do
 					}
 				. /ubit.snapshot
 				;;
-			"rootfs-full"|"rootfs-aufs")
-	                        [ "$2" ] && {
-                        	        echo setting password
-                                	echo $2 | md5sum > /.ubit.password
-					}
-				. /ubit.rootfs
-				;;
 			"prepare-full"|"prepare-aufs")
 	                        [ "$2" ] && {
                         	        echo setting password
@@ -211,13 +204,15 @@ while read option; do
 				. /ubit.kernel
 				;;
 			"install_on_reboot-full"|"install_on_reboot-aufs")
-				echo ubiattach_mtd3 > $outdir/.ubit.oneshot
+				echo ubiformat_mtd3 > $outdir/.ubit.oneshot
 				echo flash_once >> $outdir/.ubit.oneshot
+				[ -n "$2" ] && echo mkrw $2 >> $outdir/.ubit.oneshot
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
 			"installer_disk-full"|"installer_disk-aufs")
 				echo ubiformat_mtd3 > $outdir/.ubit.action
 				echo flash >> $outdir/.ubit.action
+				[ -n "$2" ] && echo mkrw $2 >> $outdir/.ubit.action
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
 			"ubiformat_mtd3-full")
@@ -227,6 +222,13 @@ while read option; do
 				;;
 			"ubiattach_mtd3-full")
 				ubiattach /dev/ubi_ctrl -m 3
+				;;
+			"mkrw-full")
+				ubirmvol /dev/ubi0 -N rw
+				ubimkvol /dev/ubi0 -N rw -S $2
+				;;
+			"rmrw-full")
+				ubirmvol /dev/ubi0 -N rw
 				;;
 			"install-full")
 	                        [ "$2" ] && {
@@ -263,9 +265,6 @@ while read option; do
 				;;
 			"ubiargs_tmpfs-full"|"ubiargs_tmpfs-aufs")
 				fw_setenv ubi_args 'ubi_args_tmpfs'
-				;;
-			"ubiargs_ubifs-full"|"ubiargs_ubifs-aufs")
-				fw_setenv ubi_args 'ubi_args_ubifs'
 				;;
 			"nc_off-full"|"nc_off-aufs")
 				fw_setenv preboot

@@ -8,9 +8,11 @@
 	rm /tmp/.scanimages
 	rm /.ubit.images
 	rm /.ubit.extramounts
+	rm /.ubit.ubimounts
 	rm /.ubit.rename
 	touch /.ubit.images
 	touch /.ubit.extramounts
+	touch /.ubit.ubimounts
 	touch /.ubit.rename
 
 	rm .ubit.images
@@ -64,13 +66,11 @@
 					;;
 				rootfs)
 					mkdir -p .ubit/rootfs
-					echo .ubit $prt 1200 >> /tmp/.scanimages
+					echo .ubit $prt 32 >> /tmp/.scanimages
 					;;
 				*)
 					echo .ubit $prt 32 >> /tmp/.scanimages
-					echo mkdir -p .aufs/$prt >> /.ubit.extramounts
-					echo mount -t ubifs ubi:$prt .aufs/$prt -o ro,noatime >> /.ubit.extramounts
-					echo mount . -o remount,append:.aufs/${prt}=rr >> /.ubit.extramounts
+					echo $prt >> /.ubit.ubimounts
 					;;
 					esac
 				[ "$suffix" ] && if [ "$backup" ]; then 
@@ -83,7 +83,7 @@
 			# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
 			mkdir -p .ubit/ramdisk
 			cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n 'ubit' -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n 'Installed UBIT ramdisk' -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
 
 			[ "$rename" ] && echo $rename > /.ubit.rename
 	

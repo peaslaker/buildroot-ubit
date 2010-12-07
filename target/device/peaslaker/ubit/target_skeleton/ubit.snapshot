@@ -1,8 +1,17 @@
 	echo UBIT.SNAPSHOT:purging old work environment...
 	uni="boot modules rootfs ramdisk"
-	targs=/targets
-	[ -e .ubit.targets ] && targs=.ubit.targets
-
+	if [ -e .ubit.targets ]; then
+		targs=.ubit.targets
+	else
+		targs=/tmp/targets
+		cat /targets > /tmp/targets
+		kver=`uname -r`
+		echo usr/src/${kver} ubi modules >> /tmp/targets	
+		echo usr/src/linux-2.6 ubi modules >> /tmp/targets	
+		( 	cd usr/src
+			ln -sf ${kver} linux-2.6
+			)
+		fi
 	echo UBIT.SNAPSHOT:extracting rootfs...
 
 		# this is about to take a long time
@@ -16,7 +25,10 @@
 	uniq=${uniq%% *}
 
 	rm -rf $outdir/.ubit $outdir/.prt
-	mkdir $/outdir/.ubit/$uniq
+	mkdir -p $outdir/.ubit/$uniq
+
+	mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
+	mount -t ubifs ubi:boot boot
 
 	tar -c . --exclude .ubit/$uniq | tar -C $outdir/.ubit/$uniq -x 
 	(
@@ -29,3 +41,5 @@
 		cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 		)
+
+	umount boot
