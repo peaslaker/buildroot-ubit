@@ -52,7 +52,7 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 	# if wherever we have ended up has a file containing ubit options and we have ubit, we process them now but we limit the options
 	# because we have a mounted aufs partition
 
-	[ -x /ubit ] && [ -e .ubit.action ] && cat .ubit.action > .ubit.last && rm .ubit.action && cat .ubit.last | /ubit -aufs
+	[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.action .ubit.last | /ubit -aufs
 
 else # we are in maintenance mode
 
@@ -82,7 +82,7 @@ else # we are in maintenance mode
 	(	
 		cd rw
 		# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
-		[ -x /ubit ] && [ -e .ubit.action ] && cat .ubit.action > .ubit.last && rm .ubit.action && cat .ubit.last | /ubit -rw
+		[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.action .ubit.last | /ubit -rw
 		)  # drop back out of rw
 
 	umount /dev/sda1

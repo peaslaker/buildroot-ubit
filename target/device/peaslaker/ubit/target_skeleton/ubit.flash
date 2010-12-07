@@ -3,6 +3,9 @@
 imgs=/.ubit.images
 [ -e .ubit.images ] && imgs=.ubit.images
 
+	# this is about to take a long time
+	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+	echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
 
 cat $imgs | while read pth prt lebcnt suffix; do
 	( cd $pth

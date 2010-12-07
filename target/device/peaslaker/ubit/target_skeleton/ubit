@@ -199,8 +199,8 @@ while read option; do
 				. /ubit.prepare
 				;;
 			"install_on_reboot-rw"|"install_on_reboot-aufs")
-				echo ubiattach_mtd3 >> $outdir/.ubit.action
-				echo flash_once >> $outdir/.ubit.action
+				echo ubiattach_mtd3 > $outdir/.ubit.oneshot
+				echo flash_once >> $outdir/.ubit.oneshot
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
 			"ubiformat_mtd3-rw")
@@ -223,13 +223,11 @@ while read option; do
 				. /ubit.kernel
 				;;
 			"flash_once-rw")
-				rm uInitrd
+				rm $outdir/uInitrd
 				. /ubit.flash
 				;;
-			"flash_multiple-rw")
+			"flash-rw")
 				. /ubit.flash
-				echo ubiattach_mtd3 >> /$outdir/.ubit.action
-				echo flash_multiple >> /$outdir/.ubit.action
 				;;
 			"dockstar-rw"|"dockstar-aufs")
 				. /ubit.u-boot
