@@ -22,5 +22,5 @@
 		. /ubit.scan
 
 		cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT kernel images" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 		)

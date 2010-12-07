@@ -1,8 +1,11 @@
-usr/share/doc ubi doc
-usr/share/man ubi doc
+usr/share/doc doc
+usr/share/doc
+usr/share/man doc 
+usr/share/man 
 var/log op
 var/log
-var/lib/pacman ubi pkg
+var/lib/pacman pkg
+var/lib/pacman
 var/cache/pacman op
 var/cache/pacman
 root

@@ -105,6 +105,7 @@
 		echo Install preparation macros
 		echo "     - on [device] [macro] # specify a block device other than /dev/sda1 to be used as the working area for the command"
 		echo "     - to [device] [macro] # specify a block device other than /dev/sda1 to be used as the output area for the command"
+		echo "     - template <targets>  # copy one of the pre-defined targets files into the root filesystem to be used for the scan and generation of UBIFS images"
 		echo "     - snapshot [password] # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
 		echo "     - prepare [password]# creates ubifs images and matched installer ramdisk from rootfs.tar.gz, modules.tar.gz and boot.tar.gz"
 		echo "     - kernel            # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
@@ -189,6 +190,13 @@ while read option; do
 						)
 					umount /workarea/$uniq
 					rm -rf /workarea/$uniq
+				;;
+			"template-full"|"template-aufs")
+	                        if [ "$2" ]; then
+					[ -e "/targets.$2 ] && cat "/targets.$2" > .ubit.targets
+				else
+					rm .ubit.targets
+					fi
 				;;
 			"snapshot-full"|"snapshot-aufs")
 	                        [ "$2" ] && {
