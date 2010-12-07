@@ -1,6 +1,6 @@
-	echo UBIT.INSTALL:purging old work environment...
+	echo UBIT.SNAPSHOT:purging old work environment...
 	rm -rf .ubit .prt
-	rm .ubit.images
+	rm /.ubit.images
 
 	mkdir -p .ubit/rootfs .prt
 
@@ -8,13 +8,10 @@
 	targs=/targets
 	[ -e .ubit.targets ] && targs=.ubit.targets
 
-	echo UBIT.INSTALL:extracting rootfs...
+	echo UBIT.SNAPSHOT:extracting rootfs...
 
 		# this is about to take a long time
 		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 		echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
 
-	tar -C .ubit/rootfs -xzf rootfs.tar.gz && . /ubit.scan && . /ubit.flash
-	rm -rf .ubit
-
-
+	tar -c . -X .ubit* -X .prt | tar -C .ubit/rootfs -x && . /ubit.scan

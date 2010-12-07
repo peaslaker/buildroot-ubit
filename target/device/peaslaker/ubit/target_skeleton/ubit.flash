@@ -1,0 +1,13 @@
+# this is where we write to NAND memory  we need a description file for the images, which will either be in the ramdisk or on the working disk
+
+imgs=/.ubit.images
+[ -e .ubit.images ] && imgs=.ubit.images
+
+
+cat $imgs | while read pth prt lebcnt suffix; do
+	( cd $pth
+		write_partition $prt $lebcnt $suffix
+		)
+	done
+
+[ "$rename" ] && ubirename /dev/ubi0 $rename

@@ -6,6 +6,8 @@
 	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 	echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
 	rm /tmp/.scanimages
+	rm /.ubit.images
+	rm .ubit.images
 	sort -r $targs | while true; do 
 		read pth prt ubiprt
 		if [ "$?" -eq "0" ] ; then
@@ -85,7 +87,6 @@
 					)
 				done
 
-			[ "$rename" ] && ubirename /dev/ubi0 $rename
 			break
 		fi
 

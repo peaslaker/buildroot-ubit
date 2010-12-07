@@ -21,29 +21,30 @@ echo none > /sys/class/leds/status\:green\:health/trigger
 mkdir /workarea /tmp
 
 cd /workarea
-cat /proc/cmdline > .cmdline
-while true; do
-	# returns having set a mountpoint in which we will try to boot
+
+	# make us look busy
 	echo timer > /sys/class/leds/status\:orange\:misc/trigger
 	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 	echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
-	. /init.rootmount
 
-	# If we have a dev directory, things are looking minimally OK, so we'll go ahead and try for the boot
-	if [ "$useubi" ] && [ -d "dev" ]; then
-		echo "Executing switch_root and spawning init"
-		# Reset environment
-		echo "" > /proc/sys/kernel/hotplug
-		echo timer > /sys/class/leds/status\:orange\:misc/trigger
-		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-		echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
-		umount /sys
-		umount /proc
-		mv /dev/null dev 
-		mv /dev/console dev
-		mv /dev/tty1 dev } && exec /bin/busybox switch_root . /sbin/init $bootargs
-		exec /bin/busybox switch_root . /sbin/init $bootargs
-		fi
-	done
+# returns having set a mountpoint in which we will try to boot
+. /init.rootmount
+
+echo "Executing switch_root and spawning init"
+# Reset environment
+echo "" > /proc/sys/kernel/hotplug
+
+	# the ramdisk has finished so we switch the lights out
+	echo none > /sys/class/leds/status\:orange\:misc/trigger
+
+bootargs=`cat /proc/cmdline`
+umount /sys
+umount /proc
+mv /dev/null dev 
+mv /dev/console dev
+mv /dev/tty1 dev 
+exec /bin/busybox switch_root . /sbin/init $bootargs
+
+	# We should never get here, but if we do...
 
 	

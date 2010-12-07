@@ -18,16 +18,15 @@ while [ "$1" ]; do
 	"ubi.mtd")
 		useubi=yes
 		;;
-	*) 
-		bootargs="$bootargs $1"
+	"rescue")
+		rescue=yes
 		;;
 		esac
-	rootargs="$rootargs $1"
 	shift
 	done
 
 mkdir -p rw
-if [ "$useubi" ]; then
+if [ -z "$rescue" ] && [ "$useubi" ]; then
 	[ "$rtype" ] || rtype=auto
 	case "$rtype" in
 		"tmpfs")
@@ -37,103 +36,118 @@ if [ "$useubi" ]; then
 			mount -t ubifs ubi:rootfs rw -o rw,relatime || mount -t tmpfs none rw
 			;;
 		"auto")
-			mount $rpath rw || ( sleep 10 ; mount $rpath rw ) || mount -t tmpfs none rw
+			mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
 			;;
 		*)
-			mount -t $rtype $rpath rw || ( sleep 10; mount -t $rtype $rpath rw )mount -t tmpfs none rw
+			mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
 			;;
 		esac	
 	[ "$rdelay" ] && sleep $rdelay
 
 	# this is a significant cd.  If nothing else happens, this will be our rootfs, come switch_root time.
 	cd rw
-	# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them now
-	[ -x /ubit ] && [ -e .ubit.action ] && { cat .ubit.action > .ubit.last ; rm .ubit.action; cat .ubit.last | /ubit; }
 	# but this is where we try to come up with a clever aufs stacked filesystem
 	. /init.aufs
-else # if we are in maintenance mode, we mount whatever we can find on sda1
-	echo mounting whatever we find on /dev/sda1
-	if { mount /dev/sda1 rw && sleep 5; } then  
-		(	cd rw
-	
-			bootargs="$rootargs"
-			[ -x /ubit ] && (
-				nanddump -nol 0x80000 -f /tmp/tmpdump /dev/mtd0 
-				for v in /valid.*.md5; do
-					cat /tmp/tmpdump | md5sum -c $v -s && {
-						echo installed u-boot checksum matches $v
-						exit 1
-						}
-					done
-				) && (
-				for o in /orig.*.md5 ; do
-					cat /tmp/tmpdump | md5sum -c $o -s && {
-						target=${o#*orig.};
-						echo ${target%.md5} reset | /ubit
-						exit 1
-						}
-					done
-				) && echo default reset | /ubit
 
-			# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
-			if { [ -x /ubit ] && [ -e .ubit.action ]; } then
-				cat .ubit.action > .ubit.last
-				rm .ubit.action
-				cat .ubit.last | /ubit
-			else
+	# if wherever we have ended up has a file containing ubit options and we have ubit, we process them now but we limit the options
+	# because we have a mounted aufs partition
 
-				echo MAINTENANCE SHELL
-				echo Current mount points:
-				mount
-				echo
-				echo The /ubit shell contains a number of useful macros for working with 
-				echo UBI/UBIFS linux installs.  You can either work interactively 
-				echo with UBIT by running /ubit directly or you can provide a script. You 
-				echo can place a sequence of /ubit macro instructions in the file .ubit.action 
-				echo in the root of the /dev/sda1 partition, unmount the partition and then
-				echo hit ctrl-D
-				echo
-				echo The UBI sequence for the initial install of a linux image would be:
-				echo
-				echo ubiattach_mtd3
-				echo install [password]
-				echo
-				echo You can also place some sensible values in the file .cmdline and 
-				echo when done hit ctrl-D to retry the rootmount/boot process
-				echo the values for root= rootfstype= rootdelay= and ubi.mtd=
-				echo all have a bearing on the startup behaviour.
-				echo 
-				echo LED flash sequences:
-				echo 
-				echo If you see an Orange heartbeat, this is bad news.  It means the device 
-				echo is sitting at a serial console prompt waiting to be rescued from a bad
-				echo flash of mtd0.
-				echo
-				echo The green LED flashes are related to mounting of the root partition and
-				echo this maintenance shell.  When commands have completed, the green LED 
-				echo should be flashing with a green heartbeat.
-				echo 
-				echo For details on the orange LED meanings, run the /ubit command.
-				echo
-				echo You are operating in the mounted partition of /dev/sda1.  You cannot
-				echo unmount this partition except by exiting this shell using ctrl-D.
-
-				echo none > /sys/class/leds/status\:orange\:misc/trigger
-				echo heartbeat > /sys/class/leds/status\:green\:health/trigger
-				/bin/ash
-				echo nand-disk > /sys/class/leds/status\:green\:health/trigger
-
-				fi
-			)
-		umount /dev/sda1
-		echo 10 seconds to remove /dev/sda1 safely 
-		for a in 10 9 8 7 6 5 4 3 2 1; do
-			echo $a
-			sleep 1
-			done
-	else
-		sleep 5
+	if { [ -x /ubit ] && [ -e .ubit.action ]; } then
+		cat .ubit.action > .ubit.last
+		rm .ubit.action
+		cat .ubit.last | /ubit -aufs
 		fi
+
+else # we are in maintenance mode
+
+	# first we check the installed U-Boot is valid for this ramdisk
+	[ -x /ubit ] && (
+		nanddump -nol 0x80000 -f /tmp/tmpdump /dev/mtd0 
+		for v in /valid.*.md5; do
+			cat /tmp/tmpdump | md5sum -c $v -s && {
+				echo installed u-boot checksum matches $v
+				exit 1
+				}
+			done
+		) && (
+		for o in /orig.*.md5 ; do
+			cat /tmp/tmpdump | md5sum -c $o -s && {
+				target=${o#*orig.};
+				echo ${target%.md5} reset | /ubit
+				exit 1
+				}
+			done
+		) && echo default reset | /ubit
+
+
+	echo mounting whatever we find on /dev/sda1
+	mount /dev/sda1 rw
+	sleep 10
+	(	
+		cd rw
+
+		# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
+		elif { [ -x /ubit ] && [ -e .ubit.action ]; } then
+			cat .ubit.action > .ubit.last
+			rm .ubit.action
+			cat .ubit.last | /ubit
+			fi
+		)  # drop back out of rw
+
+	umount /dev/sda1
+
+	echo MAINTENANCE SHELL
+	echo Current mount points:
+	mount
+	echo
+	echo The /ubit shell contains a number of useful macros for working with 
+	echo UBI/UBIFS linux installs.  You can either work interactively 
+	echo with UBIT by running /ubit directly or you can provide a script. You 
+	echo can place a sequence of /ubit macro instructions in the file .ubit.action 
+	echo in the root of the /dev/sda1 partition, unmount the partition and then
+	echo hit ctrl-D
+	echo
+	echo The /ubit shell needs working space for most of its macros.  You should mount
+	echo a device and cd into the device before running UBIT macros.  It is your responsibility
+	echo to umount the device after you have finished with /ubit
+	echo
+	echo The UBIT sequence for the initial install of a linux image would be:
+	echo
+	echo ubiattach_mtd3
+	echo install [password]
+	echo
+	echo You can also place some sensible values in the file .cmdline and 
+	echo when done hit ctrl-D to retry the rootmount/boot process
+	echo the values for root= rootfstype= rootdelay= and ubi.mtd=
+	echo all have a bearing on the startup behaviour.
+	echo 
+	echo LED flash sequences:
+	echo 
+	echo If you see an Orange heartbeat, this is bad news.  It means the device 
+	echo is sitting at a serial console prompt waiting to be rescued from a bad
+	echo flash of mtd0.
+	echo
+	echo The green LED flashes are related to mounting of the root partition and
+	echo this maintenance shell.  When commands have completed, the green LED 
+	echo should be flashing with a green heartbeat.
+	echo 
+	echo For details on the orange LED meanings, run the /ubit command.
+	echo
+
+		# about to enter the shell, so this is a safe "commands complete" position and gets the green heartbeat
+		echo none > /sys/class/leds/status\:orange\:misc/trigger
+		echo heartbeat > /sys/class/leds/status\:green\:health/trigger
+
+	exec /bin/ash
+
+		# we should never get here with the shell being an exec on process #1
+		# now we are out of the shell it is up to something else to report status.  We just switch off everything
+		echo none > /sys/class/leds/status\:orange\:misc/trigger
+		echo none > /sys/class/leds/status\:green\:health/trigger
+
 	fi
+
+
+
 
 

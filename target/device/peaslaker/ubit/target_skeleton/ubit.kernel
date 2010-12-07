@@ -7,7 +7,7 @@
 	suffix=.new
 	backup=.bak
 
-	mount --bind . .ubit/rootfs && . /ubit.scan
+	mount --bind . .ubit/rootfs && . /ubit.scan && ./ubit.flash
 	umount .ubit/rootfs
 	rm -rf .ubit
 

@@ -66,6 +66,9 @@
 # ubit fails. 
 #
 	write_partition () {
+		prt=$1
+		lebcnt=$2
+		suffix=$3
 		echo UBIT.WRITE:$prt$suffix:writing ubi partition
 
  		[ -z "$suffix" ] && ubirmvol /dev/ubi0 -N ${prt}
@@ -82,7 +85,7 @@
 		while true; do
 			mkfserror=`mkfs.ubifs -r ${prt} -m 2048 -e 129024 -c $lebcnt -o ${prt}.ubimg 2>&1 1> /dev/null` 
 			if [ "$?" -eq "0" ] ; then
-				write_partition 
+				echo $pth $prt $lebcnt $suffix >> /.ubit.images
 				break
 			elif [ "${mkfserror%% (*}" = "Error: max_leb_cnt too low" ]; then
 				echo UBIT.UBIMG:$prt:$mkfserror
@@ -124,13 +127,16 @@
 	echo your hands.
 	echo 
 
+
+subset=$1
+
 echo UBIT:ready
 while read option; do
 	echo timer > /sys/class/leds/status\:orange\:misc/trigger
 	set -- $option
 	if {	[ ! -e /password.md5 ] || { pwd=$1; shift; echo $pwd | md5sum -c /password.md5 -s; }; }; then	
 		echo UBIT:${option}
-		case "$1" in
+		case "$1$subset" in
 			"ubiformat_mtd3")
 				ubidetach /dev/ubi_ctrl -m 3
 				ubiformat /dev/mtd3
@@ -138,6 +144,19 @@ while read option; do
 				;;
 			"ubiattach_mtd3")
 				ubiattach /dev/ubi_ctrl -m 3
+				;;
+			"snapshot"|"snapshot-aufs")
+				. /ubit.snapshot
+				cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "installer for snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+				;;
+			"install_on_reboot"|"install_on_reboot-aufs")
+				echo ubiattach_mtd3 >> .ubit.action
+				echo flash_images >> .ubit.action
+				cp .ubit/uInstaller uInitrd
+				;;
+			"flash_images"")
+				. /ubit.flash
 				;;
 			"install")
 	                        [ "$2" ] && {
@@ -149,35 +168,38 @@ while read option; do
 			"kernel")
 				. /ubit.kernel
 				;;
-			"dockstar")
+			"dockstar"|"dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"default")
+			"default"|"default-aufs")
 				. /ubit.u-boot
 				;;
-			"goflexnet")
+			"goflexnet"|"goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_dockstar")
+			"orig_dockstar"|"orig_dockstar-aufs")
 				. /ubit.u-boot
 				;;
-			"orig_goflexnet")
+			"orig_goflexnet"|"orig_goflexnet-aufs")
 				. /ubit.u-boot
 				;;
-			"nc_off")
+			"nc_off"|"nc_off-aufs")
 				fw_setenv preboot
 				;;
-			"nc_on")
+			"nc_on"|"nc_on-aufs")
 				fw_setenv preboot 'run nc_test nc_start'
 				;;
-			"disable")
+			"disable"|"disable-aufs")
 				ubirename /dev/ubi0 ramdisk disabled
 				;;
-			"enable")
+			"enable"|"enable-aufs")
 				ubirename /dev/ubi0 disabled ramdisk
 				;;
-			"exit")
+			"exit|"exit-aufs")
 				exit 1
+				;;
+			*)
+				echo UBIT:$1:invalid instruction
 				;;
 			esac
 		fi
