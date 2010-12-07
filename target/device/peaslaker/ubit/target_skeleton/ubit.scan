@@ -53,7 +53,7 @@
 				case ${prt} in
 				boot)
 					mkdir -p .ubit/boot/boot
-					tar -C .ubit/boot/boot -xzf boot.tar.gz 
+					[ -e boot.tar.gz ] && tar -C .ubit/boot/boot -xzf boot.tar.gz 
 					echo .ubit/boot $prt 32 >> /tmp/.scanimages
 					;;
 				ramdisk)
@@ -61,7 +61,7 @@
 					;;
 				modules)
 					mkdir -p .ubit/modules
-					tar -C .ubit/modules -xzf modules.tar.gz
+					[ -e modules.tar.gz ] && tar -C .ubit/modules -xzf modules.tar.gz
 					echo .ubit $prt 32 >> /tmp/.scanimages
 					;;
 				rootfs)
