@@ -1,0 +1,16 @@
+	echo UBIT.KERNEL:purging old work environment...
+	rm -rf .ubit
+	mkdir -p .ubit/rootfs
+
+	uni="boot modules"
+	targs=/targets.kernel
+	suffix=.new
+	backup=.bak
+
+	mount --bind . .ubit/rootfs && . /ubit.scan
+	umount .ubit/rootfs
+	rm -rf .ubit
+
+
+
+

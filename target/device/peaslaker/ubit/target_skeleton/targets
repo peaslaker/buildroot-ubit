@@ -1,0 +1,25 @@
+usr/share/doc ubi doc
+usr/share/man ubi doc
+opt inst
+opt
+media inst
+media
+var/log op
+var/log
+var/cache op
+var/cache
+var/lib op
+var/lib
+var/lib/pacman ubi pkg
+var/cache/pacman ubi pkg
+root
+boot
+dev tmpfs
+mnt tmpfs
+net
+proc
+sys
+tmp tmpfs
+var/run tmpfs
+lib/modules ubi modules
+boot ubi boot

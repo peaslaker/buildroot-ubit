@@ -1,0 +1,2 @@
+BOARD_PATH=target/device/peaslaker/goflexnetearly
+TARGET_SKELETON=${BOARD_PATH}/target_skeleton

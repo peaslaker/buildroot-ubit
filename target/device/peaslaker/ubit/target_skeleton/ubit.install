@@ -1,0 +1,13 @@
+	echo UBIT.INSTALL:purging old work environment...
+	rm -rf .ubit .prt
+	mkdir -p .ubit/rootfs .prt
+
+	uni="boot modules rootfs ramdisk"
+	targs=/targets
+	[ -e .ubit.targets ] && targs=.ubit.targets
+
+	echo UBIT.INSTALL:extracting rootfs...
+	tar -C .ubit/rootfs -xzf rootfs.tar.gz && . /ubit.scan
+	rm -rf .ubit
+
+

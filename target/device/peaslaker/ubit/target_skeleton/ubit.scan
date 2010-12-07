@@ -1,0 +1,97 @@
+# by the time we get here, there will be:
+# 		- some sort of filesystem image available for analysis mounted on .ubit/rootfs
+#		- a populated targs variable listing the work to be done
+#		- optionally a suffix variable defined for backing up old ubi partitions
+
+	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+	echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
+	rm /tmp/.scanimages
+	sort -r $targs | while true; do 
+		read pth prt ubiprt
+		if [ "$?" -eq "0" ] ; then
+			if [ "${prt}" = "" ]; then
+				echo UBIT.SCAN:${pth}, leaving a stub
+				mkdir -p .ubit/rootfs/${pth}
+				rm -rf .ubit/rootfs/${pth}/*
+			elif [ "${prt}" = "tmpfs" ]; then
+				echo UBIT.SCAN:${pth}, leaving a stub for tmpfs mount
+				mkdir -p .ubit/rootfs/${pth}
+				rm -rf .ubit/rootfs/${pth}/*
+				echo mount -t tmpfs none $pth >> /extramounts
+			elif [ "${prt}" = "ubi" ]; then
+				prt=${ubiprt}
+				echo UBIT.SCAN:${pth}, moved to staging area for ubi vol ${prt} 
+				uni="${uni} ${prt}"
+				mkdir -p .ubit/${prt}/${pth}
+				mv .ubit/rootfs/${pth}/* .ubit/${prt}/${pth}
+				rm -rf .ubit/rootfs/${pth}
+			else
+				echo UBIT.SCAN:${pth}, moved archive area .prt/${prt}
+				mkdir -p .prt/${prt}/${pth}
+				mv .ubit/rootfs/${pth}/* .prt/${prt}/${pth}
+				rm -rf .ubit/rootfs/${pth}
+			fi
+		else
+			echo UBIT.SCAN:all targets read, now processing ubi target volumes...
+			echo First attempt for each volume tries with a small maximum LEB count which may fail, but the error 
+			echo tells us the number of LEBs to retry.  It takes a bit of time and sometimes it misses
+			echo by 1, and has to retry a third time.  It is reliable though.  Normal operation involves
+			echo error messages for each failed attempt, including segmentation faults.
+			echo
+			for prt in `echo ${uni} | tr " " "\n" | sort -ur` ; do
+				echo UBIT.SCAN:processing ubi target volume: ${prt}
+				case ${prt} in
+				boot)
+					mkdir -p .ubit/boot/boot
+					tar -C .ubit/boot/boot -xzf boot.tar.gz 
+					echo .ubit/boot $prt 32 >> /tmp/.scanimages
+					;;
+				ramdisk)
+					echo .ubit $prt 32 >> /tmp/.scanimages
+					;;
+				modules)
+					mkdir -p .ubit/modules
+					tar -C .ubit/modules -xzf modules.tar.gz
+					echo .ubit $prt 32 >> /tmp/.scanimages
+					;;
+				rootfs)
+					mkdir -p .ubit/rootfs
+					echo .ubit $prt 1200 >> /tmp/.scanimages
+					;;
+				*)
+					echo .ubit $prt 32 >> /tmp/.scanimages
+					echo mkdir -p .aufs/$prt >> /extramounts
+					echo mount -t ubifs ubi:$prt .aufs/$prt -o ro,noatime >> /extramounts
+					echo mount . -o remount,append:.aufs/${prt}=rr >> /extramounts
+					;;
+					esac
+				[ "$suffix" ] && if [ "$backup" ]; then 
+					rename="$rename ${prt} ${prt}${backup} ${prt}${suffix} ${prt}"
+				else
+					rename="$rename ${prt}${suffix} ${prt}"
+					fi
+				done
+			# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
+			mkdir -p .ubit/ramdisk
+			cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n 'ubit' -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+	
+			echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+			echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
+			# now we write all the images
+			cat /tmp/.scanimages | while read pth prt lebcnt; do
+				( cd $pth
+					ubimg $lebcnt
+					)
+				done
+
+			[ "$rename" ] && ubirename /dev/ubi0 $rename
+			break
+		fi
+
+		done 
+	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+	echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
+
+
+
