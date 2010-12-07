@@ -9,6 +9,9 @@ MTD_SITE:=ftp://ftp.infradead.org/pub/mtd-utils
 ifeq ($(BR2_PACKAGE_MTD_MKFSJFFS2),y)
 MTD_DEPENDENCIES = zlib lzo
 endif
+ifeq ($(BR2_PACKAGE_MTD_MKFSUBIFS),y)
+MTD_DEPENDENCIES = zlib lzo
+endif
 
 HOST_MTD_DEPENDENCIES = host-zlib host-lzo host-e2fsprogs
 
@@ -23,6 +26,7 @@ define HOST_MTD_INSTALL_CMDS
 endef
 
 MKFS_JFFS2=$(HOST_DIR)/usr/sbin/mkfs.jffs2
+MKFS_UBIFS=$(HOST_DIR)/usr/sbin/mkfs.ubifs
 SUMTOOL=$(HOST_DIR)/usr/sbin/sumtool
 
 MTD_TARGETS_$(BR2_PACKAGE_MTD_DOCFDISK)		+= docfdisk
@@ -63,6 +67,7 @@ MTD_TARGETS_UBI_$(BR2_PACKAGE_MTD_UBIRENAME)	+= ubirename
 MTD_TARGETS_UBI_$(BR2_PACKAGE_MTD_UBIRMVOL)	+= ubirmvol
 MTD_TARGETS_UBI_$(BR2_PACKAGE_MTD_UBIRSVOL)	+= ubirsvol
 MTD_TARGETS_UBI_$(BR2_PACKAGE_MTD_UBIUPDATEVOL)	+= ubiupdatevol
+MTD_TARGETS_UBIFS_$(BR2_PACKAGE_MTD_MKFSUBIFS)	+= mkfs.ubifs
 
 MTD_MAKE_COMMON_FLAGS = \
 	$(TARGET_CONFIGURE_OPTS) CROSS=$(TARGET_CROSS) \
@@ -84,9 +89,19 @@ define MTD_TARGETS_UBI_BUILD
 endef
 endif
 
+ifneq ($(MTD_TARGETS_UBIFS_y),)
+define MTD_TARGETS_UBIFS_BUILD
+	$(MAKE1) $(MTD_MAKE_COMMON_FLAGS) \
+		BUILDDIR=$(@D)/mkfs.ubifs/ \
+		-C $(@D)/mkfs.ubifs \
+		$(addprefix $(@D)/mkfs.ubifs/, $(MTD_TARGETS_UBIFS_y))
+endef
+endif
+
 define MTD_BUILD_CMDS
  $(MTD_TARGETS_BUILD)
  $(MTD_TARGETS_UBI_BUILD)
+ $(MTD_TARGETS_UBIFS_BUILD)
 endef
 
 define MTD_INSTALL_TARGET_CMDS
@@ -95,6 +110,9 @@ define MTD_INSTALL_TARGET_CMDS
  done ; \
  for f in $(MTD_TARGETS_UBI_y) ; do \
   install -m 0755 $(@D)/ubi-utils/$$f $(TARGET_DIR)/usr/sbin/$$f ; \
+ done
+ for f in $(MTD_TARGETS_UBIFS_y) ; do \
+  install -m 0755 $(@D)/mkfs.ubifs/$$f $(TARGET_DIR)/usr/sbin/$$f ; \
  done
 endef
 

@@ -56,6 +56,11 @@ config BR2_PACKAGE_MTD_MKFSJFFS2
 	select BR2_PACKAGE_ZLIB
 	select BR2_PACKAGE_LZO
 
+config BR2_PACKAGE_MTD_MKFSUBIFS
+	bool "mkfs.ubifs"
+	select BR2_PACKAGE_ZLIB
+	select BR2_PACKAGE_LZO
+
 config BR2_PACKAGE_MTD_MTD_DEBUG
 	bool "mtd_debug"
 	default y
