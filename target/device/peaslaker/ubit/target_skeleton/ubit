@@ -107,6 +107,7 @@
 		echo "     - to [device] [macro] # specify a block device other than /dev/sda1 to be used as the output area for the command"
 		echo "     - snapshot [password] # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
 		echo "     - prepare [password]# creates ubifs images and matched installer ramdisk from rootfs.tar.gz, modules.tar.gz and boot.tar.gz"
+		echo "     - rootfs [password] # creates ubifs images and matched installer ramdisk from just rootfs.tar.gz; boot and lib/modules are truncated"
 		echo "     - install_on_reboot # sets ubifs images and matched installer ready for use on next reboot; sets installer as uInitrd and runs flash_once"
 		echo
 		echo "Install execution macros (need to be run by ramdisk launched from external install media)"
@@ -192,16 +193,31 @@ while read option; do
 					}
 				. /ubit.snapshot
 				;;
-			"prepare-full")
+			"rootfs-full"|"rootfs-aufs")
+	                        [ "$2" ] && {
+                        	        echo setting password
+                                	echo $2 | md5sum > /.ubit.password
+					}
+				. /ubit.rootfs
+				;;
+			"prepare-full"|"prepare-aufs")
 	                        [ "$2" ] && {
                         	        echo setting password
                                 	echo $2 | md5sum > /.ubit.password
 					}
 				. /ubit.prepare
 				;;
+			"kernel-full"|"kernel-aufs")
+				. /ubit.kernel
+				;;
 			"install_on_reboot-full"|"install_on_reboot-aufs")
 				echo ubiattach_mtd3 > $outdir/.ubit.oneshot
 				echo flash_once >> $outdir/.ubit.oneshot
+				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				;;
+			"installer_disk-full"|"installer_disk-aufs")
+				echo ubiformat_mtd3 > $outdir/.ubit.action
+				echo flash >> $outdir/.ubit.action
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
 			"ubiformat_mtd3-full")
@@ -219,9 +235,6 @@ while read option; do
 					}
 				. /ubit.prepare && . /ubit.flash
 				rm -rf .ubit
-				;;
-			"kernel-full")
-				. /ubit.kernel
 				;;
 			"flash_once-full")
 				rm $outdir/uInitrd
@@ -244,6 +257,15 @@ while read option; do
 				;;
 			"orig_goflexnet-full"|"orig_goflexnet-aufs")
 				. /ubit.u-boot
+				;;
+			"ubiargs_default-full"|"ubiargs_default-aufs")
+				fw_setenv ubi_args 'ubi_args_default'
+				;;
+			"ubiargs_tmpfs-full"|"ubiargs_tmpfs-aufs")
+				fw_setenv ubi_args 'ubi_args_tmpfs'
+				;;
+			"ubiargs_ubifs-full"|"ubiargs_ubifs-aufs")
+				fw_setenv ubi_args 'ubi_args_ubifs'
 				;;
 			"nc_off-full"|"nc_off-aufs")
 				fw_setenv preboot

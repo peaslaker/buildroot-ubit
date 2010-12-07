@@ -1,8 +1,8 @@
 	echo UBIT.KERNEL:purging old work environment...
 	uni="boot modules"
 	targs=/targets.kernel
-	suffix=.new
-	backup=.bak
+#	suffix=.new
+#	backup=.bak
 
 	echo UBIT.KERNEL:extracting boot...
 

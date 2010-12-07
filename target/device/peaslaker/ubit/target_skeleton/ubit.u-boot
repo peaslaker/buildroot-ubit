@@ -32,20 +32,21 @@ if [ "${testmd5%% *}" != "${ubootmd5%% *}" ]; then
 	echo "       - nanddump -no -l 0x80000 /dev/mtd0 | md5sum"
 	echo Checksum should match: $ubootmd5
 	echo Once the checksums match for up to date u-boots you should reset the environment with:
-	echo "       - flash_erase /dev/mtd0 0xc0000 1"
+	echo "       - flash_erase /dev/mtd0 0x80000 1"
 	export option
 	export testmd5
 	export ubootmd5
-	echo heartbeat > /sys/class/leds/status\:orange\:misc/trigger
+		echo heartbeat > /sys/class/leds/status\:orange\:misc/trigger
 	/bin/ash
-	echo timer > /sys/class/leds/status\:orange\:misc/trigger
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-	echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
+		echo timer > /sys/class/leds/status\:orange\:misc/trigger
+		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
+		echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
 elif [ "$2" = "reset" ]; then 
 	echo UBIT.U-BOOT: resetting environment
-	flash_erase /dev/mtd0 0xc0000 1
+	flash_erase /dev/mtd0 0x80000 1
 	fi
 
 echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
 echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
 }
+
