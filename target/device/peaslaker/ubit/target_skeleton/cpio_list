@@ -1,4 +1,4 @@
-/extramounts
+/.ubit.extramounts
 /proc
 /usr
 /usr/sbin
@@ -37,3 +37,4 @@
 /ubit.scan
 /valid.dockstar.md5
 /valid.goflexnet.md5
+/.ubit.images

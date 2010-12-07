@@ -19,13 +19,13 @@ case "$rtype" in
 		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
 		mount -t aufs aufs ../newroot -o br:../rw=rw:../modules=rr && \
 		cd ../newroot && move_mounts rw modules && \
-		[ -e /extramounts ] && . /extramounts
+		[ -e /extramounts ] && . /.ubit.extramounts
 		;;
 	*)
 		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
 		mount -t ubifs ubi:rootfs ../rootfs -o ro,noatime && \
 		mount -t aufs aufs ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr && \
 		cd ../newroot && move_mounts rw rootfs modules && \
-		[ -e /extramounts ] && . /extramounts
+		[ -e /extramounts ] && . /.ubit.extramounts
   		;;
 	esac	

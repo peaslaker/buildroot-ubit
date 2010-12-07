@@ -7,6 +7,7 @@
 	echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
 	rm /tmp/.scanimages
 	rm /.ubit.images
+	rm /.ubit.extramounts
 	rm .ubit.images
 	sort -r $targs | while true; do 
 		read pth prt ubiprt
@@ -19,7 +20,7 @@
 				echo UBIT.SCAN:${pth}, leaving a stub for tmpfs mount
 				mkdir -p .ubit/rootfs/${pth}
 				rm -rf .ubit/rootfs/${pth}/*
-				echo mount -t tmpfs none $pth >> /extramounts
+				echo mount -t tmpfs none $pth >> /.ubit.extramounts
 			elif [ "${prt}" = "ubi" ]; then
 				prt=${ubiprt}
 				echo UBIT.SCAN:${pth}, moved to staging area for ubi vol ${prt} 
@@ -62,9 +63,9 @@
 					;;
 				*)
 					echo .ubit $prt 32 >> /tmp/.scanimages
-					echo mkdir -p .aufs/$prt >> /extramounts
-					echo mount -t ubifs ubi:$prt .aufs/$prt -o ro,noatime >> /extramounts
-					echo mount . -o remount,append:.aufs/${prt}=rr >> /extramounts
+					echo mkdir -p .aufs/$prt >> /.ubit.extramounts
+					echo mount -t ubifs ubi:$prt .aufs/$prt -o ro,noatime >> /.ubit.extramounts
+					echo mount . -o remount,append:.aufs/${prt}=rr >> /.ubit.extramounts
 					;;
 					esac
 				[ "$suffix" ] && if [ "$backup" ]; then 
