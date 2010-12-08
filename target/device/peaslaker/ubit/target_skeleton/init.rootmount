@@ -51,7 +51,7 @@ else # we are in maintenance mode
 
 	# first we check the installed U-Boot is valid for this ramdisk
 	(
-		nanddump -nol 0x60000 -f /tmp/tmp.kwb /dev/mtd0 
+		nanddump -nol 0x80000 -f /tmp/tmp.kwb /dev/mtd0 
 		for v in /*.kwb.md5; do
 			cat /tmp/tmp.kwb | md5sum -c $v -s && {
 			echo installed u-boot checksum matches $v
