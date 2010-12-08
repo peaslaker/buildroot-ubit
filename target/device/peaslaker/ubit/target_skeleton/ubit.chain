@@ -1,9 +1,0 @@
-echo UBIT.CHAIN:$1
-[ -e "$1.kwb" ] && {
-	echo UBIT.CHAIN:$1 writing to chain region of mtd1
-	flash_erase /dev/mtd1 0x380000 4
-	dd if="$1.kwb" bs=512K count=1 conv=sync | nandwrite -s 0x380000 /dev/mtd1 -
-	nanddump -s 0x380000 -nol 0x80000 /dev/mtd1 | md5sum > /tmp/checksum
-	dd if="$1.kwb" bs=512K count=1 conv=sync | md5sum -c /tmp/checksum -s || echo UBIT.CHAIN:$1 checksum does not match 
-	}
-

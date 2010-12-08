@@ -1,0 +1,63 @@
+The UBIT script system is intended to be run as a one shot operation from a dedicated initramfs image on a target 
+Pogoplug/Dockstar/Goflex Net system.  UBIT's purpose is to take over a designated mtd partition on such machines (usually mtd3)
+and configure the partition as a location for a loadable, runnable linux system, utilising UBI/UBIFS for the management
+of the mtd partition and aufs for presentation of a unified filesystem at runtime.
+
+The 'ubit' initramfs setup should be used in conjunction with a 'ubit' compatible u-boot bootloader and environment.  The
+requirements are minimal.  In short, the bootloder should provide the kernel with appropriate mtd partition information, 
+including a partition named as 'ubi'.  The 'ubit' bootloader should have a preferential boot sequence for boot from USB media,
+allowing recovery and making it acceptable for the ubit process to fail either partially or wholly.
+
+The script assumes a lot of basic material is available in the working directory and it needs a lot of space to work.
+
+For a start, the working directory must have capacity for:
+	- the target rootfs in its entirety in gzipped tar form
+	- the bulk of the rootfs in unzipped form - it gets handled in smaller partitions than the 
+		entirety, but still uses a lot of space
+	- the staging ubifs images for each element of the rootfs (these will be LZO compressed so 
+		about 60% the size of the rootfs)
+
+The script takes as input in the root of sda1:
+	- rootfs.tar.gz		- rootfs gzipped tarball
+				- the tarball should contain ./ prefixes for all entries
+	- boot.tar.gz		- a kernel package gzipped tarball, containing
+		- uImage (either the image itself or a relative symbolic link, must be aufs capable, USB and SATA built-in 
+		also expected.  Further functionality provides the possibility for md raid paritions (level 0 and 1, possibly 5)
+      - modules.tar.gz	- an archive of the respective kernel modules 
+		- lib/modules/<....>
+
+The script takes the given 'rootfs.tar.gz' and partitions it into a number of segments.
+
+The segments are variously named:
+      - rootfs	- this is the closest thing to a base filesystem, but is stripped of doc, op, pkg and inst elements
+      - doc	 	- files associated with documentation and manpages
+      - pkg	 	- files associated with running package management systems (mostly caches, logs and system state)
+      - op 		- files associated with operating the system (rather than configuration - these are discarded.  The 
+      system should contain initialisation processes to replace the contents of these directories)
+      - inst 		- usually this means /opt, but in general it separates out installed packages that are not intended 
+ 		to reside on the target Flash installed system
+	- modules	- the branch under /lib/modules
+	- boot		- the branch under /boot, stripped of the /boot
+
+Importantly, 'pkg' is *always* a subset of 'op'.  This means there are some special cases in the script.
+The usual target is that 'rootfs', 'pkg' and 'doc' are carried forward to individual UBIFS partitions on FLASH,
+with the intention that they are mounted in a union filesystem as read only layers.  The 'op' and 'inst' partitions 
+are maintained on the working directory and can be restored to the system.
+
+The intended UBIFS partitions are:
+ boot 	- contains kernel uImage and system initramfs ramdisks
+ modules 	- contains the kernel modules and is mounted at /lib/modules/
+ rootfs 	- normally contains the 'base' partition
+ doc 		- normally contains the 'doc' partition (but is optional)
+ pkg 		- normally contins the 'pkg' partition (required for further use of the package management 
+				system, but otherwise optional)
+
+It is unfortunate, but we have to rescue a numeric value from the ubi volume creation rather than refer by name for the 
+'ubiupdatevol' operations.  It is a bit clunky but feature requests have been submitted for referring to volumes by name
+throughout the 'ubi' suite of applications.
+
+If we had a known surfeit of space on the UBI volume we could also do an atomic update of the ubi volumes by installing 
+new content in new partitions and then using ubirename.  'ubit' doesn't do any resource checking, so this is not currently
+a viable approach.  In theory, setting up 'ubit' requires console access anyway, so the situation will be recoverable even if
+ubit fails. 
+

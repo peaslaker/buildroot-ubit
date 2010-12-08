@@ -49,22 +49,15 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 
 else # we are in maintenance mode
 
-	# first we check the installed U-Boot is valid for this ramdisk
-	(
-		nanddump -nol 0x80000 -f /tmp/tmp.kwb /dev/mtd0 
-		for v in /*.kwb.md5; do
-			cat /tmp/tmp.kwb | md5sum -c $v -s && {
-			echo installed u-boot checksum matches $v
-			exit 1
-			}
-		done
-	) && {
-		set - ubit
-		. /ubit.u-boot
-	}
+	# Waiting for USB System
+	echo Waiting for USB system to stabilise
+	sleep 10
+
+	# source the ub bootloader functions
+	. /functions/ub_bootloader
+	bl_uptodate
 
 	echo mounting whatever we find on /dev/sda1
-	sleep 10
 	mount /dev/sda1 rw
 	(	
 		cd rw

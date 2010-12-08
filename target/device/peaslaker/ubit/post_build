@@ -1,12 +1,13 @@
 #!/bin/bash
+UB_BS=512K
 
-dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=512K conv=sync
+cp output/images/u-boot.kwb output/target
 cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 (	cd output/target
 	mkdir -p proc
 	mkdir -p sys
-	for kwb in *.kwb; do
-		cat "$kwb" | md5sum > "$kwb.md5"
+	for bl in *.kwb orig/*.kwb; do
+		dd if="$bl" bs=${UB_BS} count=1 conv=sync | md5sum > "$bl.md5"
 	done
 	touch .ubit.ubimounts
 	touch .ubit.extramounts

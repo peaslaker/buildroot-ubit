@@ -1,0 +1,28 @@
+# bl chain functions
+BL_CHAIN_ADDR=0x380000
+BL_CHAIN_DEV=/dev/mtd1
+
+	blch_chain () {
+		# sets up a u-boot image in a section of NAND memory in order to allow chain booting
+		bl_image="$1"
+		bl_addr=${BL_CHAIN_ADDR}
+		bl_dev=${BL_CHAIN_DEV}
+
+		echo UBIT.CHAIN:$1
+		if [ -e "${bl_image}" ]; then 
+			echo UBIT.CHAIN:${bl_image} writing to ${bl_addr} of ${bl_dev}
+
+			bl_checksum
+			bl_write
+			( bl_verify )
+		fi
+	}
+
+	blch_revert () {
+		bl_addr=${BL_CHAIN_ADDR}
+		bl_dev=${BL_CHAIN_DEV}
+		if ( bl_valid /orig ); then 
+			bl_dump
+			bl_install "${BL_TMP}"
+		fi
+	}

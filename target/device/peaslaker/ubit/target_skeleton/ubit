@@ -1,154 +1,7 @@
 #!/bin/ash
-#
-# The 'ubit' script is intended to be run as a one shot operation from a dedicated initramfs image on a target 
-# Pogoplug/Dockstar/Goflex Net system.  Ubit's purpose is to take over a designated mtd partition on such machines (usually mtd3)
-# and configure the partition as a location for a loadable, runnable linux system, utilising UBI/UBIFS for the management
-# of the mtd partition and aufs for presentation of a unified filesystem at runtime.
-#
-# The 'ubit' initramfs setup should be used in conjunction with a 'ubit' compatible u-boot bootloader and environment.  The
-# requirements are minimal.  In short, the bootloder should provide the kernel with appropriate mtd partition information, 
-# including a partition named as 'ubi'.  The 'ubit' bootloader should have a preferential boot sequence for boot from USB media,
-# allowing recovery and making it acceptable for the ubit process to fail either partially or wholly.
-#
-# The script assumes a lot of basic material is available in the working directory and it needs a lot of space to work.
-#
-# For a start, the working directory must have capacity for:
-#	- the target rootfs in its entirety in gzipped tar form
-#	- the bulk of the rootfs in unzipped form - it gets handled in smaller partitions than the 
-#		entirety, but still uses a lot of space
-#	- the staging ubifs images for each element of the rootfs (these will be LZO compressed so 
-#		about 60% the size of the rootfs)
-#        
-# The script takes as input in the root of sda1:
-#	- rootfs.tar.gz		- rootfs gzipped tarball
-#				- the tarball should contain ./ prefixes for all entries
-#	- boot.tar.gz		- a kernel package gzipped tarball, containing
-#		- uImage (either the image itself or a relative symbolic link, must be aufs capable, USB and SATA built-in 
-#		also expected.  Further functionality provides the possibility for md raid paritions (level 0 and 1, possibly 5)
-#       - modules.tar.gz	- an archive of the respective kernel modules 
-#		- lib/modules/<....>
-#
-# The script takes the given 'rootfs.tar.gz' and partitions it into a number of segments.
-#
-# The segments are variously named:
-#       - rootfs	- this is the closest thing to a base filesystem, but is stripped of doc, op, pkg and inst elements
-#       - doc	 	- files associated with documentation and manpages
-#       - pkg	 	- files associated with running package management systems (mostly caches, logs and system state)
-#       - op 		- files associated with operating the system (rather than configuration - these are discarded.  The 
-#                               system should contain initialisation processes to replace the contents of these directories)
-#       - inst 		- usually this means /opt, but in general it separates out installed packages that are not intended 
-#                  		to reside on the target Flash installed system
-#	- modules	- the branch under /lib/modules
-#	- boot		- the branch under /boot, stripped of the /boot
-#
-# Importantly, 'pkg' is *always* a subset of 'op'.  This means there are some special cases in the script.
-# The usual target is that 'rootfs', 'pkg' and 'doc' are carried forward to individual UBIFS partitions on FLASH,
-# with the intention that they are mounted in a union filesystem as read only layers.  The 'op' and 'inst' partitions 
-# are maintained on the working directory and can be restored to the system.
-#
-# The intended UBIFS partitions are:
-#        boot 		- contains kernel uImage and system initramfs ramdisks
-#        modules 	- contains the kernel modules and is mounted at /lib/modules/
-#        rootfs 	- normally contains the 'base' partition
-#        doc 		- normally contains the 'doc' partition (but is optional)
-#        pkg 		- normally contins the 'pkg' partition (required for further use of the package management 
-#				system, but otherwise optional)
-#
-# It is unfortunate, but we have to rescue a numeric value from the ubi volume creation rather than refer by name for the 
-# 'ubiupdatevol' operations.  It is a bit clunky but feature requests have been submitted for referring to volumes by name
-# throughout the 'ubi' suite of applications.
-# 
-# If we had a known surfeit of space on the UBI volume we could also do an atomic update of the ubi volumes by installing 
-# new content in new partitions and then using ubirename.  'ubit' doesn't do any resource checking, so this is not currently
-# a viable approach.  In theory, setting up 'ubit' requires console access anyway, so the situation will be recoverable even if
-# ubit fails. 
-#
-	write_partition () {
-		prt=$1
-		lebcnt=$2
-		suffix=$3
-		echo UBIT.WRITE:$prt$suffix:writing ubi partition
 
- 		[ -z "$suffix" ] && ubirmvol /dev/ubi0 -N ${prt}
- 		msg=`ubimkvol /dev/ubi0 -N ${prt}${suffix} -S $lebcnt` && \
-			msg=${msg%%,*} && \
-			ubivolno=${msg##* } && \
-			ubiupdatevol /dev/ubi0_$ubivolno ${prt}.ubimg
-		}
-
-	ubimg () {
-		lebcnt=$1
-	
-		echo UBIT.UBIMG:$prt:trying mkfs.ubifs in $lebcnt LEBs...
-		while true; do
-			mkfserror=`mkfs.ubifs -r ${prt} -m 2048 -e 129024 -c $lebcnt -o ${prt}.ubimg 2>&1 1> /dev/null` 
-			if [ "$?" -eq "0" ] ; then
-				echo $pth $prt $lebcnt $suffix >> /.ubit.images
-				break
-			elif [ "${mkfserror%% (*}" = "Error: max_leb_cnt too low" ]; then
-				echo UBIT.UBIMG:$prt:$mkfserror
-				mkfserror=${mkfserror##*(}
-				lebcnt=${mkfserror%% *}
-				echo UBIT.UBIMG:$prt:retrying mkfs.ubifs in $lebcnt LEBs...
-			else
-				echo UBIT.UBIMG:$prt:unknown error creating .ubimg:$lebcnt
-				echo UBIT.UBIMG:$prt:$mkfserror
-				exit 1
-				fi
-			done
-	
-		}
-
-	usage () {
-		echo "The following special macro instructions are supported by the /ubit script."
-		echo
-		echo Install preparation macros
-		echo "     - on [device] [macro] # specify a block device other than /dev/sda1 to be used as the working area for the command"
-		echo "     - to [device] [macro] # specify a block device other than /dev/sda1 to be used as the output area for the command"
-		echo "     - template <targets>  # copy one of the pre-defined targets files into the root filesystem to be used for the scan and generation of UBIFS images"
-		echo "     - snapshot [password] # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
-		echo "     - prepare [password]# creates ubifs images and matched installer ramdisk from rootfs.tar.gz, modules.tar.gz and boot.tar.gz"
-		echo "     - kernel            # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
-		echo "     - install_on_reboot [LEBS]# sets ubifs images and matched installer ready for use on next reboot; sets installer as uInitrd and runs flash_once"
-		echo "     - install_disk [LEBS] # sets ubifs images and matched installer ready for use on subseqent reboots; sets installer as uInitrd and runs flash"
-		echo
-		echo "Install execution macros (need to be run by ramdisk launched from external install media)"
-		echo "     - ubiformat_mtd3    # format mtd3 as a ubi partition"
-		echo "     - ubiattach_mtd3    # attach mtd3 as a ubi partition"
-		echo "     - mkrw <LEBS>       # creates a rw UBIFS partition of size <LEBS> logical erase blocks "
-		echo "     - rmrw              # delete a preexisting rw UBIFS partition"
-		echo "     - install [password]# partition the contents of rootfs.tar.gz, modules.tar.gz and boot.tar.gz onto ubifs partitions"
-		echo "     - flash_once        # flash writes ubifs images - must be invoked within the matched installer"
-		echo "     - flash             # flash writes ubifs images - resets the install media after installation, ready to go again"  
-		echo
-		echo "Firmware installation macros"
-		echo "     - dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
-		echo "     - goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
-		echo "     - ubit [reset] # install the up to date ubit u-boot to mtd0, reset the environment"
-		echo
-		echo "Boot sequence adjustments"
-		echo "     - nc_off            # switch U-Boot network console off"
-		echo "     - nc_on             # switch U-Boot network console on (default 10.10.10.5)" 
-		echo "     - ubiargs_default   # switch U-Boot read-write partition priority to defaults" 
-		echo "     - ubiargs_tmpfs     # switch U-Boot to use a tmpfs read/write partition" 
-		echo "     - fastboot          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
-		echo "     - normal            # switches on boot from UBIFS as the default"
-		echo "     - ethaddr           # sets the 'ethaddr' variable in the bootloader environment.  Mac address will change at random unless forced"
-		echo 
-		echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
-		echo 
-		echo Generally, the Orange LED is used to signal the degree of activity.  
-		echo For example in the install process, when the script is actively scanning
-		echo the source material, the orange LED should flash fast.  When it is engaged
-		echo in the big atomic commands for echo creating UBIFS images, it flashes slowly.
-		echo When it is at a prompt, the green heartbeat is healthy, the orange heartbeat 
-		echo indicates a need to intervene before rebooting because you have a brick on 
-		echo your hands.
-		echo 
-		}
-
-
-
+# source the ub_functions
+. /functions/ub
 
 subset=$1
 outdir=$2
@@ -191,24 +44,24 @@ while read option; do
 					rm -rf /workarea/$uniq
 				;;
 			"template-full"|"template-aufs")
-	                        if [ "$2" ]; then
+				if [ "$2" ]; then
 					[ -e "/targets.$2" ] && cat "/targets.$2" > .ubit.targets
 				else
 					rm .ubit.targets
 					fi
 				;;
 			"snapshot-full"|"snapshot-aufs")
-	                        [ "$2" ] && {
-                        	        echo setting password
-                                	echo $2 | md5sum > /.ubit.password
-					}
+				[ "$2" ] && {
+					echo setting password
+					echo $2 | md5sum > /.ubit.password
+				}
 				. /ubit.snapshot
 				;;
 			"prepare-full"|"prepare-aufs")
-	                        [ "$2" ] && {
-                        	        echo setting password
-                                	echo $2 | md5sum > /.ubit.password
-					}
+				[ "$2" ] && {
+					echo setting password
+					echo $2 | md5sum > /.ubit.password
+				}
 				. /ubit.prepare
 				;;
 			"kernel-full"|"kernel-aufs")
@@ -226,48 +79,38 @@ while read option; do
 				[ -n "$2" ] && echo mkrw $2 >> $outdir/.ubit.action
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
 				;;
-			"ubiformat_mtd3-full")
-				ubidetach /dev/ubi_ctrl -m 3
+			"ubiformat_mtd3-full"|"ubiformat-full")
+				[ -e /dev/ubi0 ] && ubidetach /dev/ubi_ctrl -m 3
 				ubiformat /dev/mtd3
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
-			"ubiattach_mtd3-full")
+			"ubiattach_mtd3-full"|"ubiattach-full")
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
 			"mkrw-full")
-				ubirmvol /dev/ubi0 -N rw
+				( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
 				ubimkvol /dev/ubi0 -N rw -S $2
 				;;
 			"rmrw-full")
-				ubirmvol /dev/ubi0 -N rw
+				( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
 				;;
 			"install-full")
-	                        [ "$2" ] && {
-                        	        echo setting password
-                                	echo $2 | md5sum > /.ubit.password
-					}
+				[ "$2" ] && {
+					echo setting password
+					echo $2 | md5sum > /.ubit.password
+				}
 				. /ubit.prepare && . /ubit.flash
 				rm -rf .ubit
 				;;
 			"flash_once-full")
 				rm $outdir/uInitrd
-				. /ubit.flash
+				flash
 				;;
 			"flash-full")
-				. /ubit.flash
-				;;
-			"dockstar-full")
-				. /ubit.chain
-				;;
-			"goflexnet-full")
-				. /ubit.chain
-				;;
-			"chain-full")
-				shift
-				. /ubit.chain
+				flash
 				;;
 			"revert-full"|"revert-aufs")
-				. /ubit.revert
+				blch_revert
 				;;
 			"ubiargs_default-full"|"ubiargs_default-aufs")
 				fw_setenv ubi_args 'ubi_args_default'
@@ -293,11 +136,22 @@ while read option; do
 			"exit-full"|"exit-aufs")
 				exit 1
 				;;
+			"reboot-full"|"reboot-aufs")
+				reboot -f
+				;;
 			"help-full"|"help-aufs"|"help")
 				usage
 				;;
 			*)
-				echo UBIT:$1:unrecognised instruction
+				if [ -e "/$1.kwb" ]; then
+					blch_install /$1.kwb
+					blch_chain /orig/$1.kwb
+				elif [ -e "/orig/$1.kwb" ]; then
+					blch_chain /orig/$1.kwb
+				else
+					echo UBIT:$1:unrecognised instruction
+					usage
+				fi
 				;;
 			esac
 		fi
