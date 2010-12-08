@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot version: 2010.11-00024-gfb1154a-dirty
-# Tue Dec  7 20:50:18 2010
+# Buildroot version: 2010.11-00026-gbee82fe
+# Wed Dec  8 09:53:36 2010
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_arm=y
@@ -142,12 +142,12 @@ BR2_EXTRA_BINUTILS_CONFIG_OPTIONS=""
 # GCC Options
 #
 # BR2_GCC_VERSION_4_2_4 is not set
-# BR2_GCC_VERSION_4_3_X is not set
+BR2_GCC_VERSION_4_3_X=y
 # BR2_GCC_VERSION_4_4_X is not set
-BR2_GCC_VERSION_4_5_X=y
+# BR2_GCC_VERSION_4_5_X is not set
 # BR2_GCC_VERSION_SNAP is not set
 BR2_GCC_SUPPORTS_FINEGRAINEDMTUNE=y
-BR2_GCC_VERSION="4.5.1"
+BR2_GCC_VERSION="4.3.5"
 BR2_EXTRA_GCC_CONFIG_OPTIONS=""
 # BR2_GCC_CROSS_OBJC is not set
 # BR2_GCC_CROSS_FORTRAN is not set
@@ -879,10 +879,6 @@ BR2_ROOTFS_SKELETON_CUSTOM_PATH="target/device/peaslaker/ubit/target_skeleton"
 # BR2_TARGET_ROOTFS_SQUASHFS is not set
 # BR2_TARGET_ROOTFS_TAR is not set
 # BR2_TARGET_ROOTFS_CPIO is not set
-# BR2_TARGET_ROOTFS_CPIO_NONE is not set
-# BR2_TARGET_ROOTFS_CPIO_GZIP is not set
-# BR2_TARGET_ROOTFS_CPIO_BZIP2 is not set
-# BR2_TARGET_ROOTFS_CPIO_LZMA is not set
 
 #
 # initramfs requires a Linux kernel to be built
