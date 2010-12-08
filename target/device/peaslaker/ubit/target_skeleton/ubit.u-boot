@@ -8,11 +8,11 @@ echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
 
 (
 	cd $outdir
-	nanddump -no -l 0x80000 -f mtd0 /dev/mtd0
+	nanddump -nol 0x60000 -f mtd0 /dev/mtd0
 	backupsuffix=`md5sum mtd0`
 	backupsuffix=${backupsuffix%% *}
 	mv mtd0 mtd0.$backupsuffix
-	nanddump -n -l 0x80000 -f mtd0.oob.${backupsuffix} /dev/mtd0
+	nanddump -n -l 0x60000 -f mtd0.oob.${backupsuffix} /dev/mtd0
 
 	)
 
@@ -21,7 +21,7 @@ flash_erase /dev/mtd0 0 4
 echo UBIT.U-BOOT: installing $1 u-boot
 nandwrite /dev/mtd0 /$1.kwb
 
-testmd5=`nanddump -no -l 0x80000 /dev/mtd0 2>/dev/null | md5sum`
+testmd5=`nanddump -nol 0x60000 /dev/mtd0 2>/dev/null | md5sum`
 ubootmd5=`md5sum /$1.kwb`
 if [ "${testmd5%% *}" != "${ubootmd5%% *}" ]; then
 	echo UBIT.U-BOOT: u-boot install checksum didn't match.
@@ -29,7 +29,7 @@ if [ "${testmd5%% *}" != "${ubootmd5%% *}" ]; then
 	echo Commands that will be needed:
 	echo "       - flash_erase /dev/mtd0 0 4"
 	echo "       - nandwrite /dev/mtd0 /$1.kwb"
-	echo "       - nanddump -no -l 0x80000 /dev/mtd0 | md5sum"
+	echo "       - nanddump -nol 0x60000 /dev/mtd0 | md5sum"
 	echo Checksum should match: $ubootmd5
 	echo Once the checksums match for up to date u-boots you should reset the environment with:
 	echo "       - flash_erase /dev/mtd0 0x80000 1"

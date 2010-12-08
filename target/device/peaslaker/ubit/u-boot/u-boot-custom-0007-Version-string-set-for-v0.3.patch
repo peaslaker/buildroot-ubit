@@ -1,0 +1,25 @@
+From 20da352047a4e1d4d648223f656f5b5810c1f491 Mon Sep 17 00:00:00 2001
+From: Peter Carmichael <peterjncarm@ovi.com>
+Date: Wed, 8 Dec 2010 10:53:06 +0000
+Subject: [PATCH] Version string set for v0.3
+
+---
+ include/configs/goflexnet.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/goflexnet.h b/include/configs/goflexnet.h
+index 934f453..cc706ce 100644
+--- a/include/configs/goflexnet.h
++++ b/include/configs/goflexnet.h
+@@ -28,7 +28,7 @@
+ /*
+  * Version number information
+  */
+-#define CONFIG_IDENT_STRING	"\nMarvell-GoflexNet by Jeff Doozan, Peter Carmichael"
++#define CONFIG_IDENT_STRING	"\nUBIT v 0.3 for Seagate GoFlex Net by Peter Carmichael"
+ 
+ /*
+  * High Level Configuration Options (easy to change)
+-- 
+1.5.6.5
+

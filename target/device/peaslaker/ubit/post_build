@@ -1,18 +1,19 @@
 #!/bin/bash
-dd if=../u-boot/u-boot.kwb of=output/target/ubit.kwb bs=512K conv=sync
-cp ../u-boot/tools/env/fw_env.config  output/target/etc/
+dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=384K conv=sync
+cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 (	cd output/target
 	mkdir -p proc
 	mkdir -p sys
-	cat ubit.kwb | md5sum > valid.ubit.md5
-	md5sum ubit.kwb >> kwb.md5
+	for kwb in *.kwb; do
+		cat "$kwb" | md5sum > "$kwb.md5"
+	done
 	touch .ubit.ubimounts
 	touch .ubit.extramounts
 	touch .ubit.images
 	touch .ubit.rename
 	touch .ubit.password
-	find . | cut -d'.' -f 2- > cpio_list
-	find . | cpio -H newc -o | gzip > ../images/rootfs.cpio.gz
+	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > cpio_list
+	find . | sort | cpio -H newc -o | gzip > ../images/rootfs.cpio.gz
 	)
 
 ver=`cat output/target/etc/issue`

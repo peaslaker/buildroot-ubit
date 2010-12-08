@@ -50,15 +50,18 @@ if [ -z "$rescue" ] && [ "$useubi" ]; then
 else # we are in maintenance mode
 
 	# first we check the installed U-Boot is valid for this ramdisk
-	[ -x /ubit ] && (
-		nanddump -nol 0x80000 -f /tmp/tmpdump /dev/mtd0 
-		for v in /valid.*.md5; do
-			cat /tmp/tmpdump | md5sum -c $v -s && {
+	(
+		nanddump -nol 0x60000 -f /tmp/tmp.kwb /dev/mtd0 
+		for v in /*.kwb.md5; do
+			cat /tmp/tmp.kwb | md5sum -c $v -s && {
 			echo installed u-boot checksum matches $v
 			exit 1
 			}
 		done
-		) && echo ubit | /ubit -full
+	) && {
+		set - ubit
+		. /ubit.u-boot
+	}
 
 	echo mounting whatever we find on /dev/sda1
 	sleep 10

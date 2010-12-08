@@ -256,14 +256,18 @@ while read option; do
 			"flash-full")
 				. /ubit.flash
 				;;
-			"ubit-full"|"ubit-aufs")
-				. /ubit.u-boot
+			"dockstar-full")
+				. /ubit.chain
 				;;
-			"dockstar-full"|"dockstar-aufs")
-				. /ubit.u-boot
+			"goflexnet-full")
+				. /ubit.chain
 				;;
-			"goflexnet-full"|"goflexnet-aufs")
-				. /ubit.u-boot
+			"chain-full")
+				shift
+				. /ubit.chain
+				;;
+			"revert-full"|"revert-aufs")
+				. /ubit.revert
 				;;
 			"ubiargs_default-full"|"ubiargs_default-aufs")
 				fw_setenv ubi_args 'ubi_args_default'
