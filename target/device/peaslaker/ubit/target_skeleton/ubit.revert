@@ -10,6 +10,6 @@
 	done
 ) || {
 	set - tmp/tmp
-	. /ubit.uboot
+	. /ubit.u-boot
 	}
 
