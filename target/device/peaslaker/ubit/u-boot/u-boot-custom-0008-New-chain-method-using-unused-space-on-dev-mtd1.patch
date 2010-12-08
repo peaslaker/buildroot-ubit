@@ -1,28 +1,16 @@
-From 71f9d798a77dc71fe29a03107f4b5c89cc4b9797 Mon Sep 17 00:00:00 2001
+From 97a92fb064e3bf8bc1e085358a26a1b513bcb30a Mon Sep 17 00:00:00 2001
 From: Peter Carmichael <peterjncarm@ovi.com>
 Date: Wed, 8 Dec 2010 12:16:00 +0000
-Subject: [PATCH] Environment address set to 0x60000 on NAND, new chain method
+Subject: [PATCH] New chain method using unused space on /dev/mtd1
 
 ---
- include/configs/goflexnet.h |   13 +++++--------
- tools/env/fw_env.config     |    2 +-
- 2 files changed, 6 insertions(+), 9 deletions(-)
+ include/configs/goflexnet.h |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/include/configs/goflexnet.h b/include/configs/goflexnet.h
-index cc706ce..08a0b9a 100644
+index cc706ce..87e31eb 100644
 --- a/include/configs/goflexnet.h
 +++ b/include/configs/goflexnet.h
-@@ -127,8 +127,8 @@
-  * it has to be rounded to sector size
-  */
- #define CONFIG_ENV_SIZE			0x20000	/* 128k */
--#define CONFIG_ENV_ADDR			0x80000
--#define CONFIG_ENV_OFFSET		0x80000	/* env starts here */
-+#define CONFIG_ENV_ADDR			0x60000
-+#define CONFIG_ENV_OFFSET		0x60000	/* env starts here */
- 
- /*
-  * Default environment variables
 @@ -138,9 +138,8 @@
    "nc_test=ping $ncip\0" \
    "nc_start=setenv stdin nc; setenv stdout nc; setenv stderr nc; version\0" \
@@ -41,7 +29,7 @@ index cc706ce..08a0b9a 100644
    \
 -  "chain=ubifsmount boot; ubifsload 0x800000 u-boot.kwb\0" \
 -  "chain_test=ubifsmount boot; ubifsload 0x800000 test.kwb\0" \
-+  "chain=nand read 0x800000 0x80000 0x20000; nand read 0x820000 0xc0000 0x40000; go 0x800200\0" \
++  "chain=nand read.e 0x800000 0x480000 0x80000; go 0x800200\0" \
    \
    "mtdids=nand0=orion_nand\0" \
    "partition=nand0,2\0" \
@@ -53,16 +41,6 @@ index cc706ce..08a0b9a 100644
    \
    "addr_kern=0x680000\0" \
    "addr_rd=0x1100000\0" \
-diff --git a/tools/env/fw_env.config b/tools/env/fw_env.config
-index efe6436..cb69f16 100644
---- a/tools/env/fw_env.config
-+++ b/tools/env/fw_env.config
-@@ -9,4 +9,4 @@
- 
- # NAND example
- #/dev/mtd0		0x4000		0x4000		0x20000			2
--/dev/mtd0		0x80000		0x20000		0x20000
-+/dev/mtd0		0x60000		0x20000		0x20000
 -- 
 1.5.6.5
 

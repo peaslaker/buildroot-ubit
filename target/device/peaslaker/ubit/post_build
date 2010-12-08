@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=384K conv=sync
+dd if=output/images/u-boot.kwb of=output/target/ubit.kwb bs=512K conv=sync
 cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 (	cd output/target
 	mkdir -p proc
