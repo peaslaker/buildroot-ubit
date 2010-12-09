@@ -1,0 +1,21 @@
+usr/share/doc ubi doc
+usr/share/man ubi doc
+var/log op
+var/log
+var/lib/pacman ubi pkg
+var/cache/pacman op
+var/cache/pacman
+root
+boot ubi boot
+boot
+lib/modules ubi modules
+net
+proc
+sys
+media tmpfs
+dev tmpfs
+mnt tmpfs
+tmp tmpfs
+var/run tmpfs
+var/spool/cronstamps tmpfs
+var/lib/dhcpcd tmpfs

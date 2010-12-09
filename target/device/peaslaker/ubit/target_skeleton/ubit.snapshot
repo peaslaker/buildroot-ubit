@@ -1,9 +1,8 @@
 	echo UBIT.SNAPSHOT:purging old work environment...
-	uni="boot modules rootfs ramdisk"
+
 	if [ -e .ubit.targets ]; then
-		targs=.ubit.targets
+		cat .ubit.targets > /tmp/targets
 	else
-		targs=/tmp/targets
 		cat /targets > /tmp/targets
 		kver=`uname -r`
 		echo usr/src/${kver} ubi modules >> /tmp/targets	
@@ -33,10 +32,13 @@
 		mv .ubit/$uniq .ubit/rootfs 
 		rm -rf .ubit/rootfs/.ubit*
 
+		uni="boot modules rootfs ramdisk"
+		targs=/tmp/targets
 		. /ubit.scan
 
 		cat /cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer for specific UBIT snapshot" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 		)
 
+	cat "$targs" > $outdir/.ubit/targets
 	umount boot
