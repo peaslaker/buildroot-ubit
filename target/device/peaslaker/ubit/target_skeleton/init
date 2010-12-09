@@ -1,50 +1,175 @@
 #!/bin/ash
+# We first set up the environment
+export ENV=/etc/profile
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 /bin/busybox mount -t proc proc	/proc	
 /bin/busybox mount -t sysfs sys	/sys
 /bin/busybox --install -s
 
-echo "/sbin/mdev" > /proc/sys/kernel/hotplug		# mdev handles hotplug events
+echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 mkdir /dev/shm
-/sbin/mdev -s		# have mdev populate /dev
+/sbin/mdev -s
 ln -s /proc/mounts /etc/mtab
 
-#	if [ ! -e /dev/md0 ]; then
-#		makedevs	/dev/md		b 9 0 0 7
-#		fi
+. /functions/led
 
+# then we do the real init
+# function definitions
 
-echo none > /sys/class/leds/status\:orange\:misc/trigger
-echo none > /sys/class/leds/status\:green\:health/trigger
+	help () {
+		echo MAINTENANCE SHELL
+		echo
+		echo The /ubit shell contains a number of useful macros for working with 
+		echo UBI/UBIFS linux installs.  You can either work interactively 
+		echo with UBIT by running /ubit directly or you can provide a script.
+		echo
+		echo The UBIT sequence for the initial install of a linux image from /dev/sda1
+		echo would be:
+		echo
+		echo ubiattach_mtd3
+		echo on /dev/sda1 install [password]
+		echo
+		echo LED flash sequences:
+		echo 
+		echo If you see an Orange heartbeat, this is bad news.  It means the device 
+		echo is sitting at a serial console prompt waiting to be rescued from a bad
+		echo flash of mtd0.
+		echo
+		echo In case the system is running headless, the green hearbeat is shown now
+		echo for having reached the maintenance shell, indicating that it is safe 
+		echo to reset the device.
+		echo
+		echo For details on the orange LED meanings, run the /ubit command.
+		echo
+	}
 
-mkdir /workarea /tmp
+	move_mounts () {
+		for p ; do
+			mkdir -p .aufs/$p
+			mount --move ../$p .aufs/$p 
+		done
+	}
 
+	mount_rw () {
+		[ "$rtype" ] || rtype=auto
+		[ "$rpath" ] || rpath=/dev/sda1
+		[ "$rdelay" ] && sleep $rdelay
+		case "$rtype" in
+			"tmpfs")
+				mount -t tmpfs none rw
+				;;
+			"auto")
+				mount -t ubifs ubi:rw rw -o rw,relatime || mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
+				;;
+			*)
+				mount -t ubifs ubi:rw rw -o rw,relatime || mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
+				;;
+			esac	
+		cd rw
+	}
+
+	mount_aufs () {
+		mkdir ../newroot ../rootfs ../modules
+
+		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
+		mount -t ubifs ubi:rootfs  ../rootfs  -o ro,noatime && \
+		mount -t aufs  aufs        ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr && {
+			for prt in `cat /.ubit.ubimounts`; do
+				mkdir ../$prt
+				mount -t ubifs ubi:$prt ../$prt -o ro,noatime && \ 
+				mount ../newroot -o remount,append:../${prt}=rr
+			done
+		}
+
+		cd ../newroot
+
+	}
+
+	mount_finalize () {
+		move_mounts rw rootfs modules
+
+		for prt in `cat /.ubit.ubimounts`; do
+			move_mounts $prt
+		done
+
+		[ -e /.ubit.extramounts ] && . /.ubit.extramounts
+	}
+
+	rootmount () {
+		set - `cat /proc/cmdline`
+		while [ "$1" ]; do
+			case "${1%%=*}" in
+			"root")
+				rpath=${1#*=}
+				;;
+			"rootfstype")
+				rtype=${1#*=}
+				;;
+			"rootdelay")
+				rdelay=${1#*=}
+				;;
+			esac
+			shift
+		done
+
+		if ( ubinfo -d 0 &>/dev/null ); then
+			mount_rw
+			mount_aufs
+
+			# if we have a file containing ubit options and we have ubit, we process them now but we limit the options
+			# because we have a mounted aufs partition.
+			[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -aufs
+			mount_finalize
+
+		else # we are in maintenance mode
+			echo Waiting for USB system to stabilise
+			sleep 10
+
+			# source the ub bootloader functions
+			. /functions/ub_bootloader
+			bl_uptodate
+
+			echo mounting whatever we find on /dev/sda1
+			mount /dev/sda1 rw && {
+				(	
+					cd rw
+					# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
+					[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -full
+				)  
+				umount /dev/sda1
+			}
+
+			# about to enter the shell, so this is a safe "commands complete" position and gets the green heartbeat
+			orange_off
+			green_heartbeat
+
+			help
+			exec /bin/ash
+		fi
+	}
+
+# set a mountpoint into which we will try to switch_root
+green_off
+orange_normal 
+
+mkdir -p /workarea/rw /tmp
 cd /workarea
-
-	# make us look busy
-	echo timer > /sys/class/leds/status\:orange\:misc/trigger
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
-
-# returns having set a mountpoint in which we will try to boot
-. /init.rootmount
+rootmount
 
 echo "Executing switch_root and spawning init"
-# Reset environment
-echo "" > /proc/sys/kernel/hotplug
-
-	# the ramdisk has finished so we switch the lights out
-	echo none > /sys/class/leds/status\:orange\:misc/trigger
+orange_off
 
 bootargs=`cat /proc/cmdline`
+
+echo "" > /proc/sys/kernel/hotplug
 umount /sys
 umount /proc
 mv /dev/null dev 
 mv /dev/console dev
 mv /dev/tty1 dev 
-exec /bin/busybox switch_root . /sbin/init $bootargs
 
-	# We should never get here, but if we do...
+# do or die, the ramdisk hands over to the rootfs
+exec /bin/busybox switch_root . /sbin/init $bootargs
 
 	

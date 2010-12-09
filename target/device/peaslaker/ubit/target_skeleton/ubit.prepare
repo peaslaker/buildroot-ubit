@@ -5,9 +5,7 @@
 
 	echo UBIT.PREPARE:extracting rootfs...
 
-		# this is about to take a long time
-		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-		echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
+	orange_slow	# this is about to take a long time
 
 	rm -rf $outdir/.ubit $outdir/.prt
 	mkdir -p $outdir/.ubit/rootfs $outdir/.prt

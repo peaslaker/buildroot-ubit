@@ -1,4 +1,4 @@
-# source subsidiary functin groups
+# source subsidiary function groups
 . /functions/ub_bootloader
 . /functions/ub_bootloader_chain
 . /functions/ub_ubi_images
@@ -27,8 +27,9 @@
 		echo "     - flash     # flash writes ubifs images - resets the install media after installation, ready to go again"  
 		echo
 		echo "Firmware installation macros"
-		echo "     - dockstar     # reinstall the original dockstar u-boot to mtd0, restoring original pogoplug functionality"
-		echo "     - goflexnet    # reinstall the original goflexnet u-boot to mtd0, restoring original pogoplug functionality"
+		echo "     - dockstar     # install original dockstar u-boot as chain u-boot on mtd1"
+		echo "     - goflexnet    # install original goflexnet u-boot as chain u-boot on mtd1"
+		echo "     - revert       # revert to pogoplug; using previously installed chain u-boot"
 		echo "     - ubit [reset] # install the up to date ubit u-boot to mtd0, reset the environment"
 		echo
 		echo "Boot sequence adjustments"

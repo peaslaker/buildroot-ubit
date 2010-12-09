@@ -1,0 +1,81 @@
+GREEN="/sys/class/leds/status:green:health"
+ORANGE="/sys/class/leds/status:orange:misc"
+
+	_off () {
+		echo none > "${1}/trigger"
+	}
+
+	_on () {
+		echo default-on > "${1}/trigger"
+	}
+
+	_heartbeat () {
+		echo heartbeat > "${1}/trigger"
+	}
+
+	_normal () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 100 > "${1}/delay_on"
+	}
+
+	_fast () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 10 > "${1}/delay_on"
+	}
+
+	_slow () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 1000 > "${1}/delay_on"
+	}
+
+	green_off () {
+		_off "${GREEN}"
+	}
+
+	orange_off () {
+		_off "${ORANGE}"
+	}
+
+	green_on () {
+		_on "${GREEN}"
+	}
+
+	orange_on () {
+		_on "${ORANGE}"
+	}
+
+	green_heartbeat () {
+		_heartbeat "${GREEN}"
+	}
+
+	orange_heartbeat () {
+		_heartbeat "${ORANGE}"
+	}
+
+	green_normal () {
+		_normal "${GREEN}"
+	}
+
+	orange_normal () {
+		_normal "${ORANGE}"
+	}
+
+	green_fast () {
+		_fast "${GREEN}"
+	}
+
+	orange_fast () {
+		_fast "${ORANGE}"
+	}
+
+	green_slow () {
+		_slow "${GREEN}"
+	}
+
+	orange_slow () {
+		_slow "${ORANGE}"
+	}
+

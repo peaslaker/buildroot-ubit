@@ -1,6 +1,7 @@
 #!/bin/ash
 
 # source the ub_functions
+. /functions/led
 . /functions/ub
 
 subset=$1
@@ -10,7 +11,7 @@ outdir=$2
 echo outdir:$outdir
 echo UBIT:ready
 while read option; do
-	echo timer > /sys/class/leds/status\:orange\:misc/trigger
+	orange_normal
 	set -- $option
 	if {	[ -z `cat /.ubit.password` ] || { pwd=$1; shift; echo $pwd | md5sum -c /.ubit.password -s; }; }; then	
 		echo UBIT:${option}
@@ -155,6 +156,6 @@ while read option; do
 				;;
 			esac
 		fi
-	echo none > /sys/class/leds/status\:orange\:misc/trigger
+	orange_off
 	echo UBIT:ready
 	done

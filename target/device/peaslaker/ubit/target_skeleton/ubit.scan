@@ -3,8 +3,8 @@
 #		- a populated targs variable listing the work to be done
 #		- optionally a suffix variable defined for backing up old ubi partitions
 
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-	echo 10 > /sys/class/leds/status\:orange\:misc/delay_on
+	orange_fast
+
 	rm /tmp/.scanimages
 	rm /.ubit.images
 	rm /.ubit.extramounts
@@ -87,8 +87,7 @@
 
 			[ "$rename" ] && echo $rename > /.ubit.rename
 	
-			echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-			echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
+			orange_slow
 			# now we write all the images
 			cat /tmp/.scanimages | while read pth prt lebcnt; do
 				( cd $pth
@@ -99,8 +98,7 @@
 		fi
 
 		done 
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-	echo 100 > /sys/class/leds/status\:orange\:misc/delay_on
+	orange_normal
 
 
 

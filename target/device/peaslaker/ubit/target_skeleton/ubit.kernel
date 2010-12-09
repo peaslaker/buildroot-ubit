@@ -1,14 +1,9 @@
 	echo UBIT.KERNEL:purging old work environment...
 	uni="boot modules"
 	targs=/targets.kernel
-#	suffix=.new
-#	backup=.bak
 
 	echo UBIT.KERNEL:extracting boot...
-
-		# this is about to take a long time
-		echo 100 > /sys/class/leds/status\:orange\:misc/delay_off
-		echo 1000 > /sys/class/leds/status\:orange\:misc/delay_on
+	orange_slow
 
 	rm -rf $outdir/.ubit
 	mkdir -p $outdir/.ubit/boot $outdir/.ubit/rootfs
