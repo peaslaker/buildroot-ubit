@@ -7,7 +7,7 @@
 				( cd $uniq
 					echo UBIT:operating on $1
 					shift
-					eval "{ . $ENV; $@ ; }" 
+					eval "$@" 
 				)
 				umount $uniq
 			}		
@@ -18,13 +18,13 @@
 	to () {
 		uniq=`ls /workarea | md5sum`
 		uniq=${uniq%% *}
-		mkdir /workarea/$uniq
+		mkdir -p /workarea/$uniq
 		mount "$1" /workarea/$uniq && {
 			(
 				echo UBIT:output to $1
 				shift
-				outdir="/workdir/$uniq"
-				eval "{ . $ENV; $@ ; }" 
+				OUTDIR="/workdir/$uniq/"
+				eval "$@" 
 			)
 			umount /workarea/$uniq
 		}

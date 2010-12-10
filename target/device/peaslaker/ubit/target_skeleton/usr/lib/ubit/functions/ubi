@@ -12,13 +12,13 @@
 		ubimkvol /dev/ubi0 -N rw -S ${lebs}
 	}
 
-	ubiformat-mtd3 () {
+	ubiformat_mtd3 () {
 		( ubinfo -d 0 &>/dev/null ) && ubidetach /dev/ubi_ctrl -m 3
 		ubiformat /dev/mtd3
 		ubiattach /dev/ubi_ctrl -m 3
 	}			
 
-	ubiattach-mtd3 () {
+	ubiattach_mtd3 () {
 		ubiattach /dev/ubi_ctrl -m 3
 	}
 
@@ -52,9 +52,9 @@
 
 	}
 
-	flash-once () {
-		rm $outdir/uInitrd
-		rm $outdir/boot/uImage
+	flash_once () {
+		rm ${OUTDIR}uInitrd
+		rm ${OUTDIR}boot/uImage
 		flash
 	}
 

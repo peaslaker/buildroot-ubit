@@ -1,4 +1,3 @@
 . /usr/lib/ubit/profile/aufs
 . /usr/lib/ubit/functions/ubi           # these functions directly write to the ubi partition
 
-export ENV=/usr/lib/ubit/profile/full

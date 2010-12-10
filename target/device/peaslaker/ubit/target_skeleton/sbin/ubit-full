@@ -6,7 +6,7 @@
 
 . /usr/lib/ubit/profile/full
 
-mv .ubit.once .ubit.last
-. .ubit.last
-. .ubit.action
+cat .ubit.once > .ubit.last 2>/dev/null
+[ -e .ubit.last ] && . .ubit.last
+[ -e .ubit.action ] && . .ubit.action
 

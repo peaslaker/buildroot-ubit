@@ -4,4 +4,3 @@
 . /usr/lib/ubit/functions/bootargs
 . /usr/lib/ubit/functions/prepare
 
-export ENV=/usr/lib/ubit/profile/aufs

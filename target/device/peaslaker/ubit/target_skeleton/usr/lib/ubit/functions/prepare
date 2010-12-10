@@ -2,7 +2,7 @@
 		( ubinfo -d 0 -N boot &>/dev/null ) && {
 			mkdir -p /tmp/boot
 			mount -t ubifs ubi:boot /tmp/boot -o ro
-			cat /tmp/boot/boot/uImage > $outdir/boot/uImage
+			cat /tmp/boot/boot/uImage > ${OUTDIR}boot/uImage
 			umount /tmp/boot
 		}
 	}
@@ -11,8 +11,8 @@
 		{	echo ubiformat_mtd3
 			echo flash
 			echo mkrw
-		} 	> $outdir/.ubit.once
-		cat $outdir/.ubit/ramdisk/uInitrd > $outdir/uInitrd
+		} 	> ${OUTDIR}.ubit.once
+		cat ${OUTDIR}.ubit/ramdisk/uInitrd > ${OUTDIR}uInitrd
 		_copy_bootable_uimage
 	}
 
@@ -20,8 +20,8 @@
 		{	echo ubiformat_mtd3
 			echo flash
 			echo mkrw
-		} 	> $outdir/.ubit.once
-		cat $outdir/.ubit/ramdisk/uInitrd > $outdir/uInitrd
+		} 	> ${OUTDIR}.ubit.once
+		cat ${OUTDIR}.ubit/ramdisk/uInitrd > ${OUTDIR}uInitrd
 		_copy_bootable_uimage
 	}
 
@@ -62,7 +62,8 @@
 		# - a populated targs variable listing the work to be done
 		# - optionally a suffix variable defined for backing up old ubi partitions
 
-		uni="$*"
+		uni="$@"
+		echo $uni
 
 		orange_blink
 
@@ -167,16 +168,16 @@
 		orange_pulse
 
 		echo UBIT.KERNEL:purging old work environment...
-		rm -rf $outdir/.ubit
-		mkdir -p $outdir/.ubit/boot $outdir/.ubit/rootfs
+		rm -rf ${OUTDIR}.ubit
+		mkdir -p ${OUTDIR}.ubit/boot ${OUTDIR}.ubit/rootfs
 
 		# this is a little bit hard coded
 		echo UBIT.KERNEL:extracting boot...
-		tar -c boot  | tar -C $outdir/.ubit/rootfs -x 
-		tar -c lib/modules   | tar -C $outdir/.ubit/rootfs -x 
+		tar -c boot  | tar -C ${OUTDIR}.ubit/rootfs -x 
+		tar -c lib/modules   | tar -C ${OUTDIR}.ubit/rootfs -x 
 
 		(
-			cd $outdir
+			cd $OUTDIR
 			_ubit_scan boot modules
 		)
 	}
@@ -193,12 +194,12 @@
 		orange_pulse	# this is about to take a long time
 
 		echo UBIT.PREPARE:purging old work environment...
-		rm -rf $outdir/.ubit $outdir/.prt
-		mkdir -p $outdir/.ubit/rootfs $outdir/.prt
+		rm -rf ${OUTDIR}.ubit ${OUTDIR}.prt
+		mkdir -p ${OUTDIR}.ubit/rootfs ${OUTDIR}.prt
 
 		echo UBIT.PREPARE:extracting rootfs...
-		tar -C $outdir/.ubit/rootfs -xzf rootfs.tar.gz && ( 
-			cd $outdir 
+		tar -C ${OUTDIR}.ubit/rootfs -xzf rootfs.tar.gz && ( 
+			cd $OUTDIR 
 			_ubit_scan boot modules rootfs ramdisk
 
 		)
@@ -227,22 +228,22 @@
 		uniq=${uniq%% *}
 
 		echo UBIT.SNAPSHOT:purging old work environment...
-		rm -rf $outdir/.ubit $outdir/.prt
-		mkdir -p $outdir/.ubit/$uniq
+		rm -rf ${OUTDIR}.ubit ${OUTDIR}.prt
+		mkdir -p ${OUTDIR}.ubit/$uniq
 
 		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
 		mount -t ubifs ubi:boot boot
 
 		echo UBIT.SNAPSHOT:extracting rootfs...
-		tar -c . --exclude .ubit/$uniq | tar -C $outdir/.ubit/$uniq -x 
+		tar -c . --exclude .ubit/$uniq | tar -C ${OUTDIR}.ubit/$uniq -x 
 		(
-			cd $outdir
+			cd ${OUTDIR}
 			mv .ubit/$uniq .ubit/rootfs 
 			rm -rf .ubit/rootfs/.ubit*
 
 			_ubit_scan boot modules rootfs ramdisk
 		)
 
-		cat /tmp/targets > $outdir/.ubit/targets
+		cat /tmp/targets > ${OUTDIR}.ubit/targets
 		umount boot
 	}
