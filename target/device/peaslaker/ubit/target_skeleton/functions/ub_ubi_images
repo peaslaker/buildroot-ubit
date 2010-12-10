@@ -51,3 +51,29 @@
 
 		[  "`cat /.ubit.rename`" ] &&  ubirename /dev/ubi0 `cat /.ubit.rename`
 	}
+
+	rmrw () {
+		( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
+	}
+
+	mkrw () {
+		rmrw
+
+		lebs=`ubinfo -d 0`
+		lebs=${lebs#*available logical eraseblocks: }
+		lebs=${lebs%% *}
+
+		ubimkvol /dev/ubi0 -N rw -S ${lebs}
+	}
+
+	cp_uimage () {
+		( ubinfo -d 0 -N boot &>/dev/null ) && {
+			mkdir -p /tmp/boot
+			mount -t ubifs ubi:boot /tmp/boot
+			cat /tmp/boot/boot/uImage > $outdir/boot/uImage
+			umount /tmp/boot
+		}
+	}
+
+
+

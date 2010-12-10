@@ -68,17 +68,35 @@ while read option; do
 			"kernel-full"|"kernel-aufs")
 				. /ubit.kernel
 				;;
-			"install_on_reboot-full"|"install_on_reboot-aufs")
-				echo ubiformat_mtd3 > $outdir/.ubit.oneshot
-				echo flash_once >> $outdir/.ubit.oneshot
-				[ -n "$2" ] && echo mkrw $2 >> $outdir/.ubit.oneshot
+			"install-full"|"install-aufs")
+				{	echo ubiformat_mtd3
+					echo flash_once
+				} > $outdir/.ubit.oneshot
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				cp_uimage
 				;;
-			"installer_disk-full"|"installer_disk-aufs")
-				echo ubiformat_mtd3 > $outdir/.ubit.action
-				echo flash >> $outdir/.ubit.action
-				[ -n "$2" ] && echo mkrw $2 >> $outdir/.ubit.action
+			"install_rw-full"|"install_rw-aufs")
+				{	echo ubiformat_mtd3
+					echo flash_once
+					echo mkrw
+				} > $outdir/.ubit.oneshot
 				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				cp_uimage
+				;;
+			"installer-full"|"installer-aufs")
+				{	echo ubiformat_mtd3
+					echo flash
+				} > $outdir/.ubit.action
+				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				cp_uimage
+				;;
+			"installer_rw-full"|"installer_rw-aufs")
+				{	echo ubiformat_mtd3
+					echo flash
+					echo mkrw
+				} > $outdir/.ubit.action
+				cat $outdir/.ubit/uInstaller > $outdir/uInitrd
+				cp_uimage
 				;;
 			"ubiformat_mtd3-full"|"ubiformat-full")
 				[ -e /dev/ubi0 ] && ubidetach /dev/ubi_ctrl -m 3
@@ -89,22 +107,14 @@ while read option; do
 				ubiattach /dev/ubi_ctrl -m 3
 				;;
 			"mkrw-full")
-				( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
-				ubimkvol /dev/ubi0 -N rw -S $2
+				mkrw
 				;;
 			"rmrw-full")
-				( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
-				;;
-			"install-full")
-				[ "$2" ] && {
-					echo setting password
-					echo $2 | md5sum > /.ubit.password
-				}
-				. /ubit.prepare && . /ubit.flash
-				rm -rf .ubit
+				rmrw
 				;;
 			"flash_once-full")
 				rm $outdir/uInitrd
+				rm $outdir/boot/uImage
 				flash
 				;;
 			"flash-full")
