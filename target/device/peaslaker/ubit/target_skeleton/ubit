@@ -58,6 +58,9 @@ while read option; do
 				}
 				. /ubit.snapshot
 				;;
+			"tarball-full"|"tarball-aufs")
+				. /ubit.tarball
+				;;
 			"prepare-full"|"prepare-aufs")
 				[ "$2" ] && {
 					echo setting password
