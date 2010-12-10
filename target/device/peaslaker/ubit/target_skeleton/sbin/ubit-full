@@ -1,0 +1,12 @@
+#!/bin/ash
+
+	reboot() {
+		touch /tmp/reboot
+	}
+
+. /usr/lib/ubit/profile/full
+
+mv .ubit.once .ubit.last
+. .ubit.last
+. .ubit.action
+

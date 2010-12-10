@@ -12,7 +12,7 @@ mkdir /dev/shm
 /sbin/mdev -s
 ln -s /proc/mounts /etc/mtab
 
-. /functions/led
+. /usr/lib/ubit/functions/general
 
 # then we do the real init
 # function definitions
@@ -66,7 +66,12 @@ ln -s /proc/mounts /etc/mtab
 				mount -t ubifs ubi:rw rw -o rw,relatime || mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
 				;;
 			esac	
-		cd rw
+		if [ -e rw/.ubit.preboot ]; then
+			mv rw/.ubit.preboot /tmp
+			umount rw
+			exit 1
+		fi
+		exit 0
 	}
 
 	mount_aufs () {
@@ -75,7 +80,7 @@ ln -s /proc/mounts /etc/mtab
 		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
 		mount -t ubifs ubi:rootfs  ../rootfs  -o ro,noatime && \
 		mount -t aufs  aufs        ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr && {
-			for prt in `cat /.ubit.ubimounts`; do
+			for prt in `cat /etc/ubit/ubimounts`; do
 				mkdir ../$prt
 				mount -t ubifs ubi:$prt ../$prt -o ro,noatime && \ 
 				mount ../newroot -o remount,append:../${prt}=rr
@@ -83,17 +88,16 @@ ln -s /proc/mounts /etc/mtab
 		}
 
 		cd ../newroot
-
 	}
 
 	mount_finalize () {
 		move_mounts rw rootfs modules
 
-		for prt in `cat /.ubit.ubimounts`; do
+		for prt in `cat /etc/ubit/ubimounts`; do
 			move_mounts $prt
 		done
 
-		[ -e /.ubit.extramounts ] && . /.ubit.extramounts
+		[ -e /etc/ubit/extramounts ] && . /etc/ubit/extramounts
 	}
 
 	rootmount () {
@@ -113,29 +117,33 @@ ln -s /proc/mounts /etc/mtab
 			shift
 		done
 
-		if ( ubinfo -d 0 &>/dev/null ); then
-			mount_rw
+		if ( ubinfo -d 0 &>/dev/null ) && ( mount_rw ); then
+			cd rw
 			mount_aufs
 
-			# if we have a file containing ubit options and we have ubit, we process them now but we limit the options
+			# we process any ubit script now but we limit the options
 			# because we have a mounted aufs partition.
-			[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -aufs
+			ubit-aufs
 			mount_finalize
+
+		elif [ -e /tmp/.ubit.preboot ]; then
+			ubit-preboot
+			reboot -f
 
 		else # we are in maintenance mode
 			echo Waiting for USB system to stabilise
 			sleep 10
 
 			# source the ub bootloader functions
-			. /functions/ub_bootloader
+			. /usr/lib/ubit/functions/bootloader
 			bl_uptodate
 
 			echo mounting whatever we find on /dev/sda1
 			mount /dev/sda1 rw && {
 				(	
 					cd rw
-					# if wherever we have ended up has a file containing ubit options and we have ubit, let's process them  now
-					[ -e .ubit.oneshot ] && cat .ubit.oneshot > .ubit.last && rm .ubit.oneshot && cat .ubit.last .ubit.action | /ubit -full
+					# we process any ubit scripts now
+					ubit-full
 				)  
 				umount /dev/sda1
 			}
@@ -144,14 +152,18 @@ ln -s /proc/mounts /etc/mtab
 			orange_off
 			green_heartbeat
 
+			if [ -e /tmp/reboot ]; then
+				reboot -f
+			fi
 			help
+			export ENV=/usr/lib/ubit/profile/full
 			exec /bin/ash
 		fi
 	}
 
 # set a mountpoint into which we will try to switch_root
 green_off
-orange_normal 
+orange_flash 
 
 mkdir -p /workarea/rw /tmp
 cd /workarea

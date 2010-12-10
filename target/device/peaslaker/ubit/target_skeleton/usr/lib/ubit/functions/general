@@ -1,11 +1,6 @@
-# source subsidiary function groups
-. /functions/ub_bootloader
-. /functions/ub_bootloader_chain
-. /functions/ub_ubi_images
-
 # usage function
 	usage () {
-		echo "The following special macro instructions are supported by the /ubit script."
+		echo "The following special macro instructions are supported by the UBIT ramdisk."
 		echo
 		echo Install preparation macros
 		echo "     - on [device] [macro] # specify a block device other than /dev/sda1 to be used as the working area for the command"
@@ -16,30 +11,28 @@
 		echo "     - kernel              # partition the contents of a boot.tar.gz and modules.tar.gs onto ubifs partitions"
 		echo "     - install             # sets ubifs images and matched installer ready for use once"
 		echo "     - install_rw          # sets ubifs images and matched installer ready for use once"
-		echo "     - installer         # sets ubifs images and matched installer ready for repeated use"
-		echo "     - installer_rw      # sets ubifs images and matched installer ready for repeated use"
+		echo "     - set_install         # sets ubifs images and matched installer ready for repeated use"
+		echo "     - set_install_rw      # sets ubifs images and matched installer ready for repeated use"
 		echo
 		echo "Install execution macros (need to be run by ramdisk launched from external install media)"
 		echo "     - ubiformat_mtd3    # format mtd3 as a ubi partition"
 		echo "     - ubiattach_mtd3    # attach mtd3 as a ubi partition"
 		echo "     - mkrw              # creates a rw UBIFS partition using all remaining available logical erase blocks "
 		echo "     - rmrw              # delete a preexisting rw UBIFS partition"
-		echo "     - flash_once        # flash writes ubifs images - dismantles installer environment after use"
-		echo "     - flash             # flash writes ubifs images"  
+		echo "     - flash             # flash writes ubifs images - dismantles installer environment after use"
 		echo
 		echo "Firmware installation macros"
 		echo "     - dockstar     # install original dockstar u-boot as chain u-boot on mtd1"
 		echo "     - goflexnet    # install original goflexnet u-boot as chain u-boot on mtd1"
 		echo "     - revert       # revert to pogoplug; using previously installed chain u-boot"
-		echo "     - ubit [reset] # install the up to date ubit u-boot to mtd0, reset the environment"
 		echo
 		echo "Boot sequence adjustments"
 		echo "     - nc_off    # switch U-Boot network console off"
 		echo "     - nc_on     # switch U-Boot network console on (default 10.10.10.5)" 
 		echo "     - ubiargs_default   # switch U-Boot read-write partition priority to defaults" 
 		echo "     - ubiargs_tmpfs     # switch U-Boot to use a tmpfs read/write partition" 
-		echo "     - fastboot          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
-		echo "     - normal            # switches on boot from UBIFS as the default"
+		echo "     - boot_fast          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
+		echo "     - boot_normal            # switches on boot from UBIFS as the default"
 		echo "     - ethaddr           # sets the 'ethaddr' variable in the bootloader environment.  Mac address will change at random unless forced"
 		echo 
 		echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
@@ -54,7 +47,83 @@
 		echo 
 		}
 
+GLED="/sys/class/leds/status:green:health"
+OLED="/sys/class/leds/status:orange:misc"
 
+	led_off () {
+		echo none > "${1}/trigger"
+	}
 
+	led_on () {
+		echo default-on > "${1}/trigger"
+	}
 
+	led_heartbeat () {
+		echo heartbeat > "${1}/trigger"
+	}
 
+	led_flash () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 100 > "${1}/delay_on"
+	}
+
+	led_blink () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 10 > "${1}/delay_on"
+	}
+
+	led_pulse () {
+		echo timer > "${1}/trigger"
+		echo 100 > "${1}/delay_off"
+		echo 1000 > "${1}/delay_on"
+	}
+
+	green_off () {
+		led_off "${GLED}"
+	}
+
+	orange_off () {
+		led_off "${OLED}"
+	}
+
+	green_on () {
+		led_on "${GLED}"
+	}
+
+	orange_on () {
+		led_on "${OLED}"
+	}
+
+	green_heartbeat () {
+		led_heartbeat "${GLED}"
+	}
+
+	orange_heartbeat () {
+		led_heartbeat "${OLED}"
+	}
+
+	green_flash () {
+		led_flash "${GLED}"
+	}
+
+	orange_flash () {
+		led_flash "${OLED}"
+	}
+
+	green_blink () {
+		led_blink "${GLED}"
+	}
+
+	orange_blink () {
+		led_blink "${OLED}"
+	}
+
+	green_pulse () {
+		led_pulse "${GLED}"
+	}
+
+	orange_pulse () {
+		led_pulse "${OLED}"
+	}

@@ -9,12 +9,11 @@ cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 	for bl in *.kwb orig/*.kwb; do
 		dd if="$bl" bs=${UB_BS} count=1 conv=sync | md5sum > "$bl.md5"
 	done
-	touch .ubit.ubimounts
-	touch .ubit.extramounts
-	touch .ubit.images
-	touch .ubit.rename
-	touch .ubit.password
-	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > cpio_list
+	mkdir -p etc/ubit
+	touch etc/ubit/ubimounts
+	touch etc/ubit/extramounts
+	touch etc/ubit/images
+	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
 	find . | sort | cpio -H newc -o | gzip > ../images/rootfs.cpio.gz
 	)
 

@@ -1,0 +1,60 @@
+	rmrw () {
+		( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
+	}
+
+	mkrw () {
+		rmrw
+
+		lebs=`ubinfo -d 0`
+		lebs=${lebs#*available logical eraseblocks: }
+		lebs=${lebs%% *}
+
+		ubimkvol /dev/ubi0 -N rw -S ${lebs}
+	}
+
+	ubiformat-mtd3 () {
+		( ubinfo -d 0 &>/dev/null ) && ubidetach /dev/ubi_ctrl -m 3
+		ubiformat /dev/mtd3
+		ubiattach /dev/ubi_ctrl -m 3
+	}			
+
+	ubiattach-mtd3 () {
+		ubiattach /dev/ubi_ctrl -m 3
+	}
+
+	_ubi_write_partition () {
+		prt=$1
+		lebcnt=$2
+		suffix=$3
+		echo UBIT.WRITE:$prt$suffix:writing ubi partition
+
+ 		[ -z "$suffix" ] && ubirmvol /dev/ubi0 -N ${prt}
+ 		msg=`ubimkvol /dev/ubi0 -N ${prt}${suffix} -S $lebcnt` && \
+			msg=${msg%%,*} && \
+			ubivolno=${msg##* } && \
+			ubiupdatevol /dev/ubi0_$ubivolno ${prt}.ubimg
+		}
+
+	flash () {
+		# this is where we write to NAND memory  we need a description file for the images, which will either be in the ramdisk or on the working directory
+
+		imgs=/etc/ubit/images
+		[ -e .ubit.images ] && imgs=.ubit.images
+
+        	orange_pulse	# this is about to take a long time
+
+		cat $imgs | while read pth prt lebcnt suffix
+		do
+			( cd $pth 
+                		_ubi_write_partition $prt $lebcnt $suffix
+                	)
+        	done
+
+	}
+
+	flash-once () {
+		rm $outdir/uInitrd
+		rm $outdir/boot/uImage
+		flash
+	}
+

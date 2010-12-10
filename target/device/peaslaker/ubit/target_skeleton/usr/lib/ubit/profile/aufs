@@ -1,0 +1,7 @@
+. /usr/lib/ubit/functions/general
+. /usr/lib/ubit/functions/redirect
+. /usr/lib/ubit/functions/bootloader
+. /usr/lib/ubit/functions/bootargs
+. /usr/lib/ubit/functions/prepare
+
+export ENV=/usr/lib/ubit/profile/aufs

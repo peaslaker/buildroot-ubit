@@ -1,0 +1,248 @@
+	_copy_bootable_uimage () {
+		( ubinfo -d 0 -N boot &>/dev/null ) && {
+			mkdir -p /tmp/boot
+			mount -t ubifs ubi:boot /tmp/boot -o ro
+			cat /tmp/boot/boot/uImage > $outdir/boot/uImage
+			umount /tmp/boot
+		}
+	}
+
+	set_install () {
+		{	echo ubiformat_mtd3
+			echo flash
+			echo mkrw
+		} 	> $outdir/.ubit.once
+		cat $outdir/.ubit/ramdisk/uInitrd > $outdir/uInitrd
+		_copy_bootable_uimage
+	}
+
+	set_install_rw () {
+		{	echo ubiformat_mtd3
+			echo flash
+			echo mkrw
+		} 	> $outdir/.ubit.once
+		cat $outdir/.ubit/ramdisk/uInitrd > $outdir/uInitrd
+		_copy_bootable_uimage
+	}
+
+	template () {
+		if [ "$1" ]; then
+			[ -e "/etc/ubit/targets.$1" ] && cat "/etc/ubit/targets.$1" > /etc/ubit/targets
+		else
+			cat /etc/ubit/targets.default > /etc/ubit/targets
+		fi
+	}
+
+	_ubit_ubimg () {
+		lebcnt=$1
+	
+		echo UBIT.UBIMG:$prt:trying mkfs.ubifs in $lebcnt LEBs...
+		while true; do
+			mkfserror=`mkfs.ubifs -r ${prt} -m 2048 -e 129024 -c $lebcnt -o ${prt}.ubimg 2>&1 1> /dev/null` 
+			if [ "$?" -eq "0" ] ; then
+				echo $pth $prt $lebcnt $suffix >> /etc/ubit/images
+				exit 0
+			elif [ "${mkfserror%% (*}" = "Error: max_leb_cnt too low" ]; then
+				echo UBIT.UBIMG:$prt:$mkfserror
+				mkfserror=${mkfserror##*(}
+				lebcnt=${mkfserror%% *}
+				echo UBIT.UBIMG:$prt:retrying mkfs.ubifs in $lebcnt LEBs...
+			else
+				echo UBIT.UBIMG:$prt:unknown error creating .ubimg:$lebcnt
+				echo UBIT.UBIMG:$prt:$mkfserror
+				exit 1
+			fi
+		done
+	}
+
+	_ubit_scan () {
+
+		# by the time we get here, there will be:
+		# - some sort of filesystem image available for analysis mounted on .ubit/rootfs
+		# - a populated targs variable listing the work to be done
+		# - optionally a suffix variable defined for backing up old ubi partitions
+
+		uni="$*"
+
+		orange_blink
+
+		rm /tmp/.scanimages
+		rm /etc/ubit/images
+		rm /etc/ubit/extramounts
+		rm /etc/ubit/ubimounts
+		touch /etc/ubit/images
+		touch /etc/ubit/extramounts
+		touch /etc/ubit/ubimounts
+
+		rm .ubit.images
+		sort -r /tmp/targets | while true; do 
+			read pth prt ubiprt
+			if [ "$?" -eq "0" ] ; then
+				if [ "${prt}" = "" ]; then
+					echo UBIT.SCAN:${pth}, leaving a stub
+					mkdir -p .ubit/rootfs/${pth}
+					rm -rf .ubit/rootfs/${pth}/*
+				elif [ "${prt}" = "tmpfs" ]; then
+					echo UBIT.SCAN:${pth}, leaving a stub for tmpfs mount
+					mkdir -p .ubit/rootfs/${pth}
+					rm -rf .ubit/rootfs/${pth}/*
+					echo mount -t tmpfs none $pth >> /etc/ubit/extramounts
+				elif [ "${prt}" = "ubi" ]; then
+					prt=${ubiprt}
+					echo UBIT.SCAN:${pth}, moved to staging area for ubi vol ${prt} 
+					uni="${uni} ${prt}"
+					mkdir -p .ubit/${prt}/${pth}
+					mv .ubit/rootfs/${pth}/* .ubit/${prt}/${pth}
+					rm -rf .ubit/rootfs/${pth}
+				else
+					echo UBIT.SCAN:${pth}, moved archive area .prt/${prt}
+					mkdir -p .prt/${prt}/${pth}
+					mv .ubit/rootfs/${pth}/* .prt/${prt}/${pth}
+					rm -rf .ubit/rootfs/${pth}
+				fi
+			else
+				echo UBIT.SCAN:all targets read, now processing ubi target volumes...
+				echo First attempt for each volume tries with a small maximum LEB count which may fail, but the error 
+				echo tells us the number of LEBs to retry.  It takes a bit of time and sometimes it misses
+				echo by 1, and has to retry a third time.  It is reliable though.  Normal operation involves
+				echo error messages for each failed attempt, including segmentation faults.
+				echo
+				for prt in `echo ${uni} | tr " " "\n" | sort -ur` ; do
+					echo UBIT.SCAN:processing ubi target volume: ${prt}
+					case ${prt} in
+					boot)
+						mkdir -p .ubit/boot/boot
+						[ -e boot.tar.gz ] && tar -C .ubit/boot/boot -xzf boot.tar.gz 
+						echo .ubit/boot $prt 32 >> /tmp/.scanimages
+						;;
+					ramdisk)
+						echo .ubit $prt 32 >> /tmp/.scanimages
+						;;
+					modules)
+						mkdir -p .ubit/modules
+						[ -e modules.tar.gz ] && tar -C .ubit/modules -xzf modules.tar.gz
+						echo .ubit $prt 32 >> /tmp/.scanimages
+						;;
+					rootfs)
+						mkdir -p .ubit/rootfs
+						echo .ubit $prt 32 >> /tmp/.scanimages
+						;;
+					*)
+						echo .ubit $prt 32 >> /tmp/.scanimages
+						echo $prt >> /etc/ubit/ubimounts
+						;;
+					esac
+				done
+
+				# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
+				mkdir -p .ubit/ramdisk
+				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Scan: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+
+				orange_pulse
+				# now we write all the images
+				cat /tmp/.scanimages | while read pth prt lebcnt; do
+					( cd $pth
+						_ubit_ubimg $lebcnt
+					)
+				done
+				break
+			fi
+
+		done
+		orange_flash
+
+	}
+
+	_ubit_password () {
+		[ "$1" ] && {
+			echo setting password
+			echo $1 | md5sum > /etc/ubit/password
+		}
+	}
+
+	kernel () {
+		cat /etc/ubit/targets.kernel > /tmp/targets
+
+		orange_pulse
+
+		echo UBIT.KERNEL:purging old work environment...
+		rm -rf $outdir/.ubit
+		mkdir -p $outdir/.ubit/boot $outdir/.ubit/rootfs
+
+		# this is a little bit hard coded
+		echo UBIT.KERNEL:extracting boot...
+		tar -c boot  | tar -C $outdir/.ubit/rootfs -x 
+		tar -c lib/modules   | tar -C $outdir/.ubit/rootfs -x 
+
+		(
+			cd $outdir
+			_ubit_scan boot modules
+		)
+	}
+
+	prepare () {
+		_ubit_password "$1"
+
+		if [ -e .ubit.targets ]; then
+			cat .ubit.targets > /tmp/targets
+		else
+			cat /etc/ubit/targets > /tmp/targets	
+		fi
+
+		orange_pulse	# this is about to take a long time
+
+		echo UBIT.PREPARE:purging old work environment...
+		rm -rf $outdir/.ubit $outdir/.prt
+		mkdir -p $outdir/.ubit/rootfs $outdir/.prt
+
+		echo UBIT.PREPARE:extracting rootfs...
+		tar -C $outdir/.ubit/rootfs -xzf rootfs.tar.gz && ( 
+			cd $outdir 
+			_ubit_scan boot modules rootfs ramdisk
+
+		)
+	}
+
+	snapshot () {
+		_ubit_password "$1"
+
+		if [ -e .ubit.targets ]; then
+			cat .ubit.targets > /tmp/targets
+		else
+			cat /etc/ubit/targets > /tmp/targets
+			kver=`uname -r`
+			echo usr/src/${kver} ubi modules >> /tmp/targets	
+			echo usr/src/linux-2.6 ubi modules >> /tmp/targets	
+			( 	cd usr/src
+				ln -sf ${kver} linux-2.6
+				)
+			fi
+
+		orange_pulse			# this is about to take a long time
+
+		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
+
+		uniq=`ls | md5sum`
+		uniq=${uniq%% *}
+
+		echo UBIT.SNAPSHOT:purging old work environment...
+		rm -rf $outdir/.ubit $outdir/.prt
+		mkdir -p $outdir/.ubit/$uniq
+
+		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
+		mount -t ubifs ubi:boot boot
+
+		echo UBIT.SNAPSHOT:extracting rootfs...
+		tar -c . --exclude .ubit/$uniq | tar -C $outdir/.ubit/$uniq -x 
+		(
+			cd $outdir
+			mv .ubit/$uniq .ubit/rootfs 
+			rm -rf .ubit/rootfs/.ubit*
+
+			_ubit_scan boot modules rootfs ramdisk
+		)
+
+		cat /tmp/targets > $outdir/.ubit/targets
+		umount boot
+	}

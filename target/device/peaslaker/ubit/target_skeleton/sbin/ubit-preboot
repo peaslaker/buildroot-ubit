@@ -1,0 +1,9 @@
+#!/bin/ash
+
+	reboot() {
+		touch /tmp/reboot
+	}
+
+. /usr/lib/ubit/profile/full
+
+. /tmp/.ubit.preboot
