@@ -87,7 +87,7 @@ BL_CHECKSUM=/tmp/checksum
 	}
 
 	bl_uptodate () {
-		bl_install "/u-boot.kwb"
+		bl_install "/usr/lib/ubit/firmware/u-boot.kwb"
 	}
 
 # bl chain functions
@@ -113,7 +113,7 @@ BL_CHAIN_DEV=/dev/mtd1
 	revert () {
 		bl_addr=${BL_CHAIN_ADDR}
 		bl_dev=${BL_CHAIN_DEV}
-		if ( bl_valid /orig ); then 
+		if ( bl_valid /usr/lib/ubit/firmware/original ); then 
 			bl_dump
 			bl_install "${BL_TMP}"
 		fi

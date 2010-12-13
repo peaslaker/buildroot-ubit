@@ -1,0 +1,63 @@
+	snapshot () {
+		_ubit_password "$1"
+
+		if [ -e .ubit.targets ]; then
+			cat .ubit.targets > /tmp/targets
+		else
+			cat /etc/ubit/targets > /tmp/targets
+			kver=`uname -r`
+			echo usr/src/${kver} ubi modules >> /tmp/targets	
+			echo usr/src/linux-2.6 ubi modules >> /tmp/targets	
+			( 	cd usr/src
+				ln -sf ${kver} linux-2.6
+				)
+			fi
+
+		orange_pulse			# this is about to take a long time
+
+		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
+
+		uniq=`ls | md5sum`
+		uniq=${uniq%% *}
+
+		echo UBIT.SNAPSHOT:purging old work environment...
+		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
+		mkdir -p "${OUTDIR}.ubit/${uniq}"
+
+		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
+		mount -t ubifs ubi:boot boot
+
+		echo UBIT.SNAPSHOT:extracting rootfs...
+		tar -c . --exclude ".ubit/${uniq}" | tar -C "${OUTDIR}.ubit/${uniq}" -x 
+		(
+			[ "${OUTDIR}" ] && cd "${OUTDIR}"
+			mv ".ubit/${uniq}" .ubit/rootfs 
+			rm -rf .ubit/rootfs/.ubit*
+
+			_ubit_scan boot modules rootfs ramdisk
+		)
+
+		cat /tmp/targets > "${OUTDIR}.ubit/targets"
+		umount boot
+	}
+
+	tarball () {
+		orange_pulse			# this is about to take a long time
+
+		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
+
+		uniq=`ls | md5sum`
+		uniq=${uniq%% *}
+
+		echo UBIT.TARBALL:purging old work environment...
+		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
+
+		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
+		mount -t ubifs ubi:boot boot
+
+		echo UBIT.TARBALL:extracting rootfs...
+		tar -c . --exclude ".ubit/${uniq}" -f "${OUTDIR}.ubit/${uniq}"
+		mv "${OUTDIR}.ubit/${uniq}" ${OUTDIR}rootfs.tar 
+
+		umount boot
+	}

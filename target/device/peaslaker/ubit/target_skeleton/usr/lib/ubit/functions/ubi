@@ -25,11 +25,10 @@
 	_ubi_write_partition () {
 		prt=$1
 		lebcnt=$2
-		suffix=$3
-		echo UBIT.WRITE:$prt$suffix:writing ubi partition
+		echo UBIT.WRITE:$prt:writing ubi partition
 
- 		[ -z "$suffix" ] && ubirmvol /dev/ubi0 -N ${prt}
- 		msg=`ubimkvol /dev/ubi0 -N ${prt}${suffix} -S $lebcnt` && \
+ 		( ubinfo -d 0 -N $prt ) && ubirmvol /dev/ubi0 -N ${prt}
+ 		msg=`ubimkvol /dev/ubi0 -N ${prt} -S $lebcnt` && \
 			msg=${msg%%,*} && \
 			ubivolno=${msg##* } && \
 			ubiupdatevol /dev/ubi0_$ubivolno ${prt}.ubimg
@@ -43,10 +42,10 @@
 
         	orange_pulse	# this is about to take a long time
 
-		cat $imgs | while read pth prt lebcnt suffix
+		cat $imgs | while read pth prt lebcnt
 		do
 			( cd $pth 
-                		_ubi_write_partition $prt $lebcnt $suffix
+                		_ubi_write_partition $prt $lebcnt
                 	)
         	done
 

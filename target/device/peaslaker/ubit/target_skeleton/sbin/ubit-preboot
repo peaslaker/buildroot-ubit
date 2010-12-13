@@ -6,4 +6,6 @@
 
 . /usr/lib/ubit/profile/full
 
-[ -e /tmp/.ubit.preboot ] && . /tmp/.ubit.preboot
+[ -e /tmp/.ubit.preboot ] && { 
+	. /tmp/.ubit.preboot 
+}

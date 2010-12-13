@@ -6,7 +6,13 @@
 
 . /usr/lib/ubit/profile/full
 
+touch .ubit.once
 cat .ubit.once > .ubit.last 2>/dev/null
-[ -e .ubit.last ] && . .ubit.last
-[ -e .ubit.action ] && . .ubit.action
+rm .ubit.once
+[ -e .ubit.last ] && {
+	. .ubit.last
+}
+[ -e .ubit.action ] && {
+	. .ubit.action
+}
 

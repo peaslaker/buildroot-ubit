@@ -3,4 +3,5 @@
 . /usr/lib/ubit/functions/bootloader
 . /usr/lib/ubit/functions/bootargs
 . /usr/lib/ubit/functions/prepare
+. /usr/lib/ubit/functions/aufs
 

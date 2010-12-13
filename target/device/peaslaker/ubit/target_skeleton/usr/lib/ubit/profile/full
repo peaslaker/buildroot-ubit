@@ -1,3 +1,7 @@
-. /usr/lib/ubit/profile/aufs
-. /usr/lib/ubit/functions/ubi           # these functions directly write to the ubi partition
+. /usr/lib/ubit/functions/general
+. /usr/lib/ubit/functions/redirect
+. /usr/lib/ubit/functions/bootloader
+. /usr/lib/ubit/functions/bootargs
+. /usr/lib/ubit/functions/prepare
+. /usr/lib/ubit/functions/ubi
 

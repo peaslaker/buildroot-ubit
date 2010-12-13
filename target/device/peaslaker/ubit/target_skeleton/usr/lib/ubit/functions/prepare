@@ -9,18 +9,18 @@
 
 	set_install () {
 		{	echo ubiformat_mtd3
-			echo flash
+			echo flash_once
 		} 	> "${OUTDIR}.ubit.once"
-		cat "${OUTDIR}.ubit/ramdisk/uInitrd" > "${OUTDIR}uInitrd"
+		cat "${OUTDIR}.ubit/uInstaller" > "${OUTDIR}uInitrd"
 		_copy_bootable_uimage
 	}
 
 	set_install_rw () {
 		{	echo ubiformat_mtd3
-			echo flash
+			echo flash_once
 			echo mkrw
 		} 	> "${OUTDIR}.ubit.once"
-		cat "${OUTDIR}.ubit/ramdisk/uInitrd" > "${OUTDIR}uInitrd"
+		cat "${OUTDIR}.ubit/uInstaller" > "${OUTDIR}uInitrd"
 		_copy_bootable_uimage
 	}
 
@@ -39,7 +39,7 @@
 		while true; do
 			mkfserror=`mkfs.ubifs -r ${prt} -m 2048 -e 129024 -c $lebcnt -o ${prt}.ubimg 2>&1 1> /dev/null` 
 			if [ "$?" -eq "0" ] ; then
-				echo $pth $prt $lebcnt $suffix >> /etc/ubit/images
+				echo $pth $prt $lebcnt  >> /etc/ubit/images
 				exit 0
 			elif [ "${mkfserror%% (*}" = "Error: max_leb_cnt too low" ]; then
 				echo UBIT.UBIMG:$prt:$mkfserror
@@ -59,7 +59,6 @@
 		# by the time we get here, there will be:
 		# - some sort of filesystem image available for analysis mounted on .ubit/rootfs
 		# - a populated targs variable listing the work to be done
-		# - optionally a suffix variable defined for backing up old ubi partitions
 
 		uni="$@"
 		echo $uni
@@ -74,7 +73,6 @@
 		touch /etc/ubit/extramounts
 		touch /etc/ubit/ubimounts
 
-		rm .ubit.images
 		sort -r /tmp/targets | while true; do 
 			read pth prt ubiprt
 			if [ "$?" -eq "0" ] ; then
@@ -137,7 +135,7 @@
 				# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
 				mkdir -p .ubit/ramdisk
 				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Scan: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
 
 				orange_pulse
 				# now we write all the images
@@ -146,6 +144,8 @@
 						_ubit_ubimg $lebcnt
 					)
 				done
+				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 				break
 			fi
 
@@ -197,52 +197,11 @@
 		mkdir -p "${OUTDIR}.ubit/rootfs" "${OUTDIR}.prt"
 
 		echo UBIT.PREPARE:extracting rootfs...
-		tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz && ( 
+		( tar -C "${OUTDIR}.ubit/rootfs" -xf rootfs.tar ||  
+		tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz ) && ( 
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			_ubit_scan boot modules rootfs ramdisk
 
 		)
 	}
 
-	snapshot () {
-		_ubit_password "$1"
-
-		if [ -e .ubit.targets ]; then
-			cat .ubit.targets > /tmp/targets
-		else
-			cat /etc/ubit/targets > /tmp/targets
-			kver=`uname -r`
-			echo usr/src/${kver} ubi modules >> /tmp/targets	
-			echo usr/src/linux-2.6 ubi modules >> /tmp/targets	
-			( 	cd usr/src
-				ln -sf ${kver} linux-2.6
-				)
-			fi
-
-		orange_pulse			# this is about to take a long time
-
-		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
-
-		uniq=`ls | md5sum`
-		uniq=${uniq%% *}
-
-		echo UBIT.SNAPSHOT:purging old work environment...
-		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
-		mkdir -p "${OUTDIR}.ubit/${uniq}"
-
-		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
-		mount -t ubifs ubi:boot boot
-
-		echo UBIT.SNAPSHOT:extracting rootfs...
-		tar -c . --exclude ".ubit/${uniq}" | tar -C "${OUTDIR}.ubit/${uniq}" -x 
-		(
-			[ "${OUTDIR}" ] && cd "${OUTDIR}"
-			mv ".ubit/${uniq}" .ubit/rootfs 
-			rm -rf .ubit/rootfs/.ubit*
-
-			_ubit_scan boot modules rootfs ramdisk
-		)
-
-		cat /tmp/targets > "${OUTDIR}.ubit/targets"
-		umount boot
-	}
