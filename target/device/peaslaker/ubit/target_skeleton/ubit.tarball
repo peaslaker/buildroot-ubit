@@ -8,18 +8,18 @@
 
 	echo UBIT.TARBALL:purging old work environment...
 	rm -rf $outdir/.ubit $outdir/.prt
-	mkdir -p $outdir/.ubit/$uniq
+	mkdir -p $outdir/.ubit
 
 	mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
 	mount -t ubifs ubi:boot boot
 
 	echo UBIT.TARBALL:extracting rootfs...
 
-	tar -c . --exclude .ubit/$uniq -zf $outdir/.ubit/$uniq/rootfs.tar.gz
+	tar -c . --exclude $uniq -f ${outdir}$uniq
+	umount boot
 
 	(
 		cd $outdir
-		mv .ubit/$uniq .ubit/tarball 
+		mv $uniq rootfs.tar 
 		)
 
-	umount boot
