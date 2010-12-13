@@ -3,14 +3,21 @@
 export ENV=/etc/profile
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
-/bin/busybox mount -t proc proc	/proc	
-/bin/busybox mount -t sysfs sys	/sys
-/bin/busybox --install -s
+	setup_env () {
+		/bin/busybox mount -t proc proc	/proc	
+		/bin/busybox mount -t sysfs sys	/sys
+		/bin/busybox --install -s
 
-echo "/sbin/mdev" > /proc/sys/kernel/hotplug
-mkdir /dev/shm
-/sbin/mdev -s
-ln -s /proc/mounts /etc/mtab
+		echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+		mkdir /dev/shm
+		/sbin/mdev -s
+		ln -s /proc/mounts /etc/mtab
+
+	kill_env () {
+		echo "" > /proc/sys/kernel/hotplug
+		umount /sys
+		umount /proc
+	}
 
 . /usr/lib/ubit/functions/general
 
@@ -155,13 +162,15 @@ ln -s /proc/mounts /etc/mtab
 			if [ -e /tmp/reboot ]; then
 				reboot -f
 			fi
-			help
+
 			export ENV=/usr/lib/ubit/profile/full
-			exec /bin/ash
+			kill_env
+			exec /bin/busybox init
 		fi
 	}
 
 # set a mountpoint into which we will try to switch_root
+setup_env
 green_off
 orange_flash 
 
@@ -174,9 +183,7 @@ orange_off
 
 bootargs=`cat /proc/cmdline`
 
-echo "" > /proc/sys/kernel/hotplug
-umount /sys
-umount /proc
+kill_env
 mv /dev/null dev 
 mv /dev/console dev
 mv /dev/tty1 dev 
