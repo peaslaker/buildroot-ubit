@@ -53,8 +53,8 @@
 	}
 
 	flash_once () {
-		rm ${OUTDIR}uInitrd
-		rm ${OUTDIR}boot/uImage
+		rm "${OUTDIR}uInitrd"
+		rm "${OUTDIR}boot/uImage"
 		flash
 	}
 

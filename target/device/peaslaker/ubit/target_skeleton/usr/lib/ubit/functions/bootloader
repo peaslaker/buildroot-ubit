@@ -61,7 +61,8 @@ BL_CHECKSUM=/tmp/checksum
 	bl_backup() {
 		echo UBIT:bl: backing up ${bl_dev} to ${OUTDIR}
 		echo Keep your u-boot backups safe.
-		( 	cd ${OUTDIR}
+		(
+			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			bl_dump
 			set - `md5sum "${BL_TMP}"`
 			mv "${BL_TMP}" u-boot.$1.kwb

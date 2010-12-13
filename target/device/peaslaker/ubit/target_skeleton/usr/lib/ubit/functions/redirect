@@ -2,31 +2,32 @@
 		( 	cd /workarea
 			uniq=`ls | md5sum`
 			uniq=${uniq%% *}
-			mkdir $uniq
-			mount "$1" $uniq && {
-				( cd $uniq
+			mkdir ${uniq}
+			mount "$1" "${uniq}" && {
+				( cd "${uniq}"
 					echo UBIT:operating on $1
 					shift
+					OUTDIR="/workarea/${uniq}"
 					eval "$@" 
 				)
-				umount $uniq
+				umount "${uniq}"
 			}		
-			rm -rf $uniq
+			rm -rf "${uniq}"
 		)	
 	}
 
 	to () {
 		uniq=`ls /workarea | md5sum`
 		uniq=${uniq%% *}
-		mkdir -p /workarea/$uniq
-		mount "$1" /workarea/$uniq && {
+		mkdir -p "/workarea/${uniq}"
+		mount "$1" "/workarea/${uniq}" && {
 			(
 				echo UBIT:output to $1
 				shift
-				OUTDIR="/workdir/$uniq/"
-				eval "$@" 
+				OUTDIR="/workarea/${uniq}/"
+				eval "$@"
 			)
-			umount /workarea/$uniq
+			umount "/workarea/${uniq}"
 		}
-		rm -rf /workarea/$uniq
+		rm -rf "/workarea/${uniq}"
 	}
