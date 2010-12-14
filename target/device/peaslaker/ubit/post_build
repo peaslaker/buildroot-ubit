@@ -1,7 +1,8 @@
 #!/bin/bash
 UB_BS=512K
 
-cp output/images/u-boot.kwb output/target/usr/lib/ubit/firmware
+#cp output/images/u-boot.kwb output/target/usr/lib/ubit/firmware
+cp ../u-boot/u-boot.kwb output/target/usr/lib/ubit/firmware
 cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 (	cd output/target
 	mkdir -p proc
