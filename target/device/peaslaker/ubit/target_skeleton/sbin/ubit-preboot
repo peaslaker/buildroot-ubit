@@ -4,7 +4,8 @@
 		touch /tmp/reboot
 	}
 
-. /usr/lib/ubit/profile/full
+export ENV=/usr/lib/ubit/profile/full
+. ${ENV}
 
 [ -e /tmp/.ubit.preboot ] && { 
 	. /tmp/.ubit.preboot 

@@ -27,7 +27,7 @@
 		lebcnt=$2
 		echo UBIT.WRITE:$prt:writing ubi partition
 
- 		( ubinfo -d 0 -N $prt ) && ubirmvol /dev/ubi0 -N ${prt}
+ 		( ubinfo -d 0 -N $prt &>/dev/null ) && ubirmvol /dev/ubi0 -N ${prt}
  		msg=`ubimkvol /dev/ubi0 -N ${prt} -S $lebcnt` && \
 			msg=${msg%%,*} && \
 			ubivolno=${msg##* } && \
@@ -40,7 +40,7 @@
 		imgs=/etc/ubit/images
 		[ -e .ubit.images ] && imgs=.ubit.images
 
-        	orange_pulse	# this is about to take a long time
+        	fault_pulse	# this is about to take a long time
 
 		cat $imgs | while read pth prt lebcnt
 		do
@@ -48,7 +48,7 @@
                 		_ubi_write_partition $prt $lebcnt
                 	)
         	done
-
+		fault_off
 	}
 
 	flash_once () {

@@ -13,7 +13,7 @@
 				)
 			fi
 
-		orange_pulse			# this is about to take a long time
+		fault_pulse			# this is about to take a long time
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
 
@@ -39,10 +39,11 @@
 
 		cat /tmp/targets > "${OUTDIR}.ubit/targets"
 		umount boot
+		fault_off
 	}
 
 	tarball () {
-		orange_pulse			# this is about to take a long time
+		fault_pulse			# this is about to take a long time
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
 
@@ -56,8 +57,9 @@
 		mount -t ubifs ubi:boot boot
 
 		echo UBIT.TARBALL:extracting rootfs...
-		tar -c . --exclude ".ubit/${uniq}" -f "${OUTDIR}.ubit/${uniq}"
-		mv "${OUTDIR}.ubit/${uniq}" ${OUTDIR}rootfs.tar 
+		tar -c . --exclude "${uniq}" -f "${OUTDIR}${uniq}"
+		mv "${OUTDIR}${uniq}" ${OUTDIR}rootfs.tar 
 
 		umount boot
+		fault_off
 	}

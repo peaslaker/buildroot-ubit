@@ -1,6 +1,6 @@
 	_copy_bootable_uimage () {
 		( ubinfo -d 0 -N boot &>/dev/null ) && {
-			mkdir -p /tmp/boot
+			mkdir -p /tmp/boot ${OUTDIR}boot
 			mount -t ubifs ubi:boot /tmp/boot -o ro
 			cat /tmp/boot/boot/uImage > "${OUTDIR}boot/uImage"
 			umount /tmp/boot
@@ -63,7 +63,7 @@
 		uni="$@"
 		echo $uni
 
-		orange_blink
+		fault_blink
 
 		rm /tmp/.scanimages
 		rm /etc/ubit/images
@@ -137,7 +137,7 @@
 				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
 
-				orange_pulse
+				fault_pulse
 				# now we write all the images
 				cat /tmp/.scanimages | while read pth prt lebcnt; do
 					( cd $pth
@@ -146,11 +146,14 @@
 				done
 				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+				cat /etc/ubit/images > .ubit/images
+				cat /etc/ubit/extramounts > .ubit/extramounts
+				cat /etc/ubit/ubimounts > .ubit/ubimounts
 				break
 			fi
 
 		done
-		orange_flash
+		fault_flash
 
 	}
 
@@ -164,7 +167,7 @@
 	kernel () {
 		cat /etc/ubit/targets.kernel > /tmp/targets
 
-		orange_pulse
+		fault_pulse
 
 		echo UBIT.KERNEL:purging old work environment...
 		rm -rf "${OUTDIR}.ubit"
@@ -179,6 +182,7 @@
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			_ubit_scan boot modules
 		)
+		fault_off
 	}
 
 	prepare () {
@@ -190,7 +194,7 @@
 			cat /etc/ubit/targets > /tmp/targets	
 		fi
 
-		orange_pulse	# this is about to take a long time
+		fault_pulse	# this is about to take a long time
 
 		echo UBIT.PREPARE:purging old work environment...
 		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
@@ -203,5 +207,6 @@
 			_ubit_scan boot modules rootfs ramdisk
 
 		)
+		fault_off
 	}
 

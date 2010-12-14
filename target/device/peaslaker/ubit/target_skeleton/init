@@ -1,6 +1,5 @@
 #!/bin/ash
 # We first set up the environment
-export ENV=/etc/profile
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 	setup_env () {
@@ -155,9 +154,9 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				umount /dev/sda1
 			}
 
-			# about to enter the shell, so this is a safe "commands complete" position and gets the green heartbeat
-			orange_off
-			green_heartbeat
+			# about to enter the shell, so this is a safe "commands complete" position and gets the green set on
+			fault_off
+			health_on
 
 			if [ -e /tmp/reboot ]; then
 				reboot -f
@@ -171,15 +170,15 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # set a mountpoint into which we will try to switch_root
 setup_env
-green_off
-orange_flash 
+health_off
+fault_flash 
 
 mkdir -p /workarea/rw /tmp
 cd /workarea
 rootmount
 
 echo "Executing switch_root and spawning init"
-orange_off
+fault_off
 
 bootargs=`cat /proc/cmdline`
 

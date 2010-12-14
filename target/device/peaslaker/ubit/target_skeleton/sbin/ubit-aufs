@@ -4,7 +4,8 @@
 		touch /tmp/reboot
 	}
 
-. /usr/lib/ubit/profile/aufs
+export ENV=/usr/lib/ubit/profile/aufs
+. ${ENV}
 
 touch .ubit.once
 cat .ubit.once > .ubit.last 2>/dev/null

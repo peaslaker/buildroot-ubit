@@ -47,83 +47,105 @@
 		echo 
 		}
 
-GLED="/sys/class/leds/status:green:health"
-OLED="/sys/class/leds/status:orange:misc"
+        status_value () {
+                param=$1
+                value=$2
+		set - `ls -d /sys/class/leds/status\:*\:${func}`
+		ctl="$1/${param}"
+                if ! [ -e "${ctl}" ]; then
+			set - `ls -d /sys/class/leds/status\:*`
+			ctl="$1/${param}"
+		fi
+                if [ -e "${ctl}" ]; then
+			echo "$value" > "$ctl"
+		fi
+        }
 
-	led_off () {
-		echo none > "${1}/trigger"
+        status_trigger () {
+                status_value trigger "$1"
+        }
+
+        status_off () {
+                func=$1
+                status_trigger off
+        }
+
+        status_on () {
+                func=$1
+                status_trigger default-on
+        }
+
+        status_heartbeat () {
+                func=$1
+                status_trigger heartbeat
+        }
+
+        status_flash () {
+                func=$1
+                status_trigger timer
+                status_value delay_off 100
+                status_value delay_on 100
+        }
+
+        status_blink () {
+                func=$1
+                status_trigger timer
+                status_value delay_off 100
+                status_value delay_on 10
+        }
+
+        status_blink () {
+                func=$1
+                status_trigger timer
+                status_value delay_off 100
+                status_value delay_on 1000
+        }
+
+        health_off () {
+                status_off health
+        }
+
+        fault_off () {
+                status_off fault
+        }
+
+        health_on () {
+                status_on health
+        }
+
+        fault_on () {
+                status_on fault
 	}
 
-	led_on () {
-		echo default-on > "${1}/trigger"
+        health_heartbeat () {
+                status_heartbeat health
+        }
+
+        fault_heartbeat () {
+                status_heartbeat fault
 	}
 
-	led_heartbeat () {
-		echo heartbeat > "${1}/trigger"
+        health_flash () {
+                status_flash health
+        }
+
+        fault_flash () {
+                status_flash fault
 	}
 
-	led_flash () {
-		echo timer > "${1}/trigger"
-		echo 100 > "${1}/delay_off"
-		echo 100 > "${1}/delay_on"
+        health_blink () {
+                status_blink health
+        }
+
+        fault_blink () {
+                status_blink fault
 	}
 
-	led_blink () {
-		echo timer > "${1}/trigger"
-		echo 100 > "${1}/delay_off"
-		echo 10 > "${1}/delay_on"
+        health_pulse () {
+                status_pulse health
+        }
+
+        fault_pulse () {
+                status_pulse fault
 	}
 
-	led_pulse () {
-		echo timer > "${1}/trigger"
-		echo 100 > "${1}/delay_off"
-		echo 1000 > "${1}/delay_on"
-	}
-
-	green_off () {
-		led_off "${GLED}"
-	}
-
-	orange_off () {
-		led_off "${OLED}"
-	}
-
-	green_on () {
-		led_on "${GLED}"
-	}
-
-	orange_on () {
-		led_on "${OLED}"
-	}
-
-	green_heartbeat () {
-		led_heartbeat "${GLED}"
-	}
-
-	orange_heartbeat () {
-		led_heartbeat "${OLED}"
-	}
-
-	green_flash () {
-		led_flash "${GLED}"
-	}
-
-	orange_flash () {
-		led_flash "${OLED}"
-	}
-
-	green_blink () {
-		led_blink "${GLED}"
-	}
-
-	orange_blink () {
-		led_blink "${OLED}"
-	}
-
-	green_pulse () {
-		led_pulse "${GLED}"
-	}
-
-	orange_pulse () {
-		led_pulse "${OLED}"
-	}
