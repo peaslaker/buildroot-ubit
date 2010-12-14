@@ -2,6 +2,29 @@
 # We first set up the environment
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
+	startup_date () {
+                t=0
+                devs=`find /dev -type b`
+                for d in $devs; do
+                        results=`tune2fs -l $d 2> /dev/null`
+                        if [ $? = 0 ]; then
+                                for i in 'Last write time:' 'Last mount time:' 'Filesystem created:' 'Last checked:' ; do
+					srch=`echo "$results" | grep "$i"`
+					echo $srch
+					srch=${srch#*${i}}
+					echo $srch
+					srch=${srch##*  }
+					echo $srch
+                                        tt=`/bin/date -D "%A %b %e %H:%M:%S %Y" -d "${srch}" +%s`
+                                        if [ $tt -gt $t ]; then
+                                                t=$tt
+                                        fi
+                                done
+                        fi
+                done
+                /bin/date -s @$t
+        }
+
 	setup_env () {
 		/bin/busybox mount -t proc proc	/proc	
 		/bin/busybox mount -t sysfs sys	/sys
@@ -11,6 +34,9 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		mkdir /dev/shm
 		/sbin/mdev -s
 		ln -s /proc/mounts /etc/mtab
+
+		hostname -F /etc/hostname
+	}
 
 	kill_env () {
 		echo "" > /proc/sys/kernel/hotplug
@@ -124,6 +150,8 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		done
 
 		if ( ubinfo -d 0 &>/dev/null ) && ( mount_rw ); then
+			startup_date
+
 			cd rw
 			mount_aufs
 
@@ -133,12 +161,21 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			mount_finalize
 
 		elif [ -e /tmp/.ubit.preboot ]; then
+			echo Waiting for USB system to stabilise
+			sleep 10
+
+			startup_date
+			/etc/init.d/rcS
+
 			ubit-preboot
 			reboot -f
 
 		else # we are in maintenance mode
 			echo Waiting for USB system to stabilise
 			sleep 10
+
+			startup_date
+			/etc/init.d/rcS
 
 			# source the ub bootloader functions
 			. /usr/lib/ubit/functions/bootloader
@@ -163,7 +200,6 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			fi
 
 			export ENV=/usr/lib/ubit/profile/full
-			kill_env
 			exec /bin/busybox init
 		fi
 	}

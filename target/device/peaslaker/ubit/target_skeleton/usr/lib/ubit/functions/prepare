@@ -185,6 +185,18 @@
 		fault_off
 	}
 
+
+	is_prepared () {
+		[ -e .ubit/images ] && [ -e .ubit/ubimounts ] && [ -e .ubit/extramounts ] && exit 0
+		exit 1  
+	}
+
+	ready_prepared () {
+		cat .ubit/images > /etc/ubit/images
+		cat .ubit/extramounts > /etc/ubit/extramounts
+		cat .ubit/ubimounts > /etc/ubit/ubimounts
+	}
+
 	prepare () {
 		_ubit_password "$1"
 

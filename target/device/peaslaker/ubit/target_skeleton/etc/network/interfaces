@@ -1,0 +1,9 @@
+auto lo
+iface lo inet loopback
+iface eth0 inet dhcp
+  zcip-pref 169.254.9.17
+  up /etc/init.d/led start || true
+  up /etc/init.d/sshd start || true
+  down /etc/init.d/led stop || true
+  down /etc/init.d/sshd stop || kill -9 `cat /var/run/sshd.pid` || true
+  down kill -9 `cat /var/run/udhcpc.eth0.pid`

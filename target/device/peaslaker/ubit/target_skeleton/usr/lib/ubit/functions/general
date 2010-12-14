@@ -47,6 +47,7 @@
 		echo 
 		}
 
+
         status_value () {
                 param=$1
                 value=$2
@@ -67,7 +68,7 @@
 
         status_off () {
                 func=$1
-                status_trigger off
+                status_trigger none
         }
 
         status_on () {
@@ -90,11 +91,18 @@
         status_blink () {
                 func=$1
                 status_trigger timer
+                status_value delay_off 10
+                status_value delay_on 500
+        }
+
+        status_flicker () {
+                func=$1
+                status_trigger timer
                 status_value delay_off 100
                 status_value delay_on 10
         }
 
-        status_blink () {
+        status_pulse () {
                 func=$1
                 status_trigger timer
                 status_value delay_off 100
@@ -133,8 +141,16 @@
                 status_flash fault
 	}
 
+        health_flicker () {
+                status_flicker health
+        }
+
+        fault_blink () {
+                status_flicker fault
+	}
+
         health_blink () {
-                status_blink health
+                status_flicker health
         }
 
         fault_blink () {

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+[ "$IFACE" = "eth0" ] || exit 0
+
+/usr/sbin/ntpd -q -p pool.ntp.org

@@ -1,33 +1,41 @@
 	on () {
-		( 	cd /workarea
-			uniq=`ls | md5sum`
-			uniq=${uniq%% *}
-			mkdir ${uniq}
-			mount "$1" "${uniq}" && {
-				( cd "${uniq}"
-					echo UBIT:operating on $1
-					shift
-					OUTDIR="/workarea/${uniq}"
-					eval "$@" 
-				)
-				umount "${uniq}"
-			}		
-			rm -rf "${uniq}"
-		)	
+		if ! [ -e /tmp/redirect_on ]  && ! [ -e /tmp/redirect_to ]; then 
+			( 	cd /workarea
+				uniq=`ls | md5sum`
+				uniq=${uniq%% *}
+				mkdir ${uniq}
+				mount "$1" "${uniq}" && {
+					( cd "${uniq}"
+						echo UBIT:operating on $1
+						shift
+						OUTDIR="/workarea/${uniq}/"
+						echo "$@" > /tmp/redirect_on
+						. /tmp/redirect_on
+						rm /tmp/redirect_on
+					)
+					umount "${uniq}"
+				}		
+				rm -rf "${uniq}"
+			)
+		fi	
 	}
 
 	to () {
-		uniq=`ls /workarea | md5sum`
-		uniq=${uniq%% *}
-		mkdir -p "/workarea/${uniq}"
-		mount "$1" "/workarea/${uniq}" && {
-			(
-				echo UBIT:output to $1
-				shift
-				OUTDIR="/workarea/${uniq}/"
-				eval "$@"
-			)
-			umount "/workarea/${uniq}"
-		}
-		rm -rf "/workarea/${uniq}"
+		if ! [ -e /tmp/redirect_to ]; then
+			uniq=`ls /workarea | md5sum`
+			uniq=${uniq%% *}
+			mkdir -p "/workarea/${uniq}"
+			mount "$1" "/workarea/${uniq}" && {
+				(
+					echo UBIT:output to $1
+					shift
+					OUTDIR="/workarea/${uniq}/"
+					echo "$@" > /tmp/redirect_to
+					. /tmp/redirect_to
+					rm /tmp/redirect_to
+				)
+				umount "/workarea/${uniq}"
+			}
+			rm -rf "/workarea/${uniq}"
+		fi
 	}

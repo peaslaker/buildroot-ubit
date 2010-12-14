@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Start the LEDs...
+#
+script=$0
+action=$1
+
+set - `ls /sys/class/leds/status\:*\:health`
+ctl=$1
+
+case "${action}" in
+  start)
+ 	echo "Starting heartbeat LED..."
+	echo heartbeat > ${ctl}/trigger
+	;;
+  stop)
+	echo -n "Stopping heartbeat LED..."
+	echo none > ${ctl}/trigger
+	;;
+  restart|reload)
+	$script stop
+	$script start
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
+
