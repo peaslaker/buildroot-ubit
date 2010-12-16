@@ -40,7 +40,7 @@
 		imgs=/etc/ubit/images
 		[ -e .ubit.images ] && imgs=.ubit.images
 
-        	fault_pulse	# this is about to take a long time
+        	statusled progress	# this is about to take a long time
 
 		cat $imgs | while read pth prt lebcnt
 		do
@@ -48,7 +48,7 @@
                 		_ubi_write_partition $prt $lebcnt
                 	)
         	done
-		fault_off
+		statusled idle
 	}
 
 	flash_once () {

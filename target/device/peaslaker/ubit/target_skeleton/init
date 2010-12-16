@@ -192,8 +192,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			}
 
 			# about to enter the shell, so this is a safe "commands complete" position and gets the green set on
-			fault_off
-			health_on
+			statusled inactive
 
 			if [ -e /tmp/reboot ]; then
 				reboot -f
@@ -206,15 +205,14 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # set a mountpoint into which we will try to switch_root
 setup_env
-health_off
-fault_flash 
+statusled busy
 
 mkdir -p /workarea/rw /tmp
 cd /workarea
 rootmount
 
 echo "Executing switch_root and spawning init"
-fault_off
+statusled on
 
 bootargs=`cat /proc/cmdline`
 

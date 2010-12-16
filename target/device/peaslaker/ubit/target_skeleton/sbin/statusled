@@ -1,0 +1,271 @@
+#!/bin/sh
+        _value () {
+		echo "$2" > "$led/$1"
+        }
+
+        _trigger () {
+                _value trigger "$1"
+        }
+
+	_command () {
+		local led
+		led=$2
+
+		case "$1" in
+		verify )		echo 0;;
+		off|OFF|none)
+			[ "$led" ] && _trigger none
+					echo 1;;
+		inactive|idle|IDL|blink)
+			[ "$led" ] && {
+			_trigger timer
+			_value delay_off 1000
+			_value delay_on 10
+			}
+					echo 2;;
+		active|ACT|flicker)
+			[ "$led" ] && {
+			_trigger timer
+			_value delay_off 100
+			_value delay_on 10
+			}
+					echo 3;;
+		busy|BUS|flash)
+			[ "$led" ] && {
+			_trigger timer
+			_value delay_off 100
+			_value delay_on 100
+			}
+					echo 4;;
+		progress|PRO|pulse)
+			[ "$led" ] && {
+			_trigger timer
+			_value delay_off 100
+			_value delay_on 1000
+			}
+					echo 5;;
+		blank)
+			_trigger timer
+			_value delay_off 0
+			_value delay_on 0
+		;;
+		on|ON|OK|default-on)
+			[ "$led" ] && _trigger default-on
+					echo 6;;
+		acknowledge|ACK)	echo 7;;
+		error|ERR)		echo 8;;
+		connect|CONN)		echo 9;;
+		disconnect|DISC)	echo 10;;
+		heartbeat) 		_trigger heartbeat;;
+		*) 			echo 0; exit 1;;
+		esac			
+	}
+
+	trigger_of () {
+		t=$(cat $1/trigger)
+		t=${t#*\[}
+		t=${t%%]*}
+		echo $t
+	}
+
+	specific_timer () {
+		led=$1
+		shift
+		t=$1
+
+		doff=$(cat $led/delay_off)
+		don=$(cat $led/delay_on)
+		case ${doff}-${don} in
+			1000-10)
+				t=blink
+			;;
+			100-10)
+				t=flicker
+			;;
+			100-100)
+				t=flash
+			;;
+			100-1000)
+				t=pulse
+			;;
+			0-0)
+				t=blank
+			;;
+			1000-*)
+				t=blink
+				don=10
+			;;
+			100-*)
+				t=flash
+				don=100
+			;;
+			0-*)
+				t=blank
+				don=0
+			;;
+			*)
+				t=flash
+				echo 100 > $led_delay_off
+				don=100
+			;;
+		esac
+		echo ${don} > $led/delay_on
+		echo $t
+		[ "${t}" = "$1" ]; exit $?
+	}
+
+	what_type () {
+		local led
+		local trigger
+		local t
+
+		led=$1
+		shift
+		trigger=$1
+
+		t=$(trigger_of $led)
+
+		# first we cover translation of aliases.
+		case $trigger in
+		on|ON|OK)
+			trigger=default-on
+			set $trigger
+		;;
+		off|OFF)
+			trigger=none
+			set $trigger
+		;;
+		inactive|idle|IDL|blink)
+			trigger=timer
+			set blink
+		;;
+		active|ACT|flicker)
+			trigger=timer
+			set flicker
+		;;
+		busy|BUS|flash)
+			trigger=timer
+			set flash
+		;;
+		progress|PRO|pulse)
+			trigger=timer
+			set pulse
+		;;
+		blank)
+			trigger=timer
+			set blank
+		;;
+		# 'heartbeat' is an insufficient alias of "error" or "acknowledge" so they are not tested here
+		esac			
+
+		if [ "$t" = "$1" ]; then
+			echo $1  # This is the successful result - the sanitized name of the state we are in
+			exit 0
+		elif [ "$t" != "timer" ]; then
+			echo $t  # The fail case returns the sanitized name of the state we are in
+			exit 1
+		else
+			echo $(specific_timer $led $1)
+			exit $?
+		fi 
+	}	
+
+	what_class () {
+		what_type $1 timer
+	}
+
+	what () {
+		what_type $1 on
+	}
+
+	dual_command () {
+		local cmd
+
+		local h_op
+		local f_op
+
+		cmd=$3
+	
+		case "$1$2" in
+
+			timertimer)		set none-noop          ;;
+			timerdefault-on)	set none-noop          ;;	
+			default-ontimer)	set none-noop          ;;	
+			timernone)		set noop blank-none blink-none flicker-none flash-none pulse-none on-none noop blank-heartbeat noop disconnect;;
+			nonetimer)		set noop none-blank none-blink none-flicker none-flash none-pulse none-default-on noop none-heartbeat connect noop;;
+			default-ondefault-on)	set none-noop          ;;	
+			heartbeatnone)		set noop blank-none blink-none flicker-none flash-none pulse-none on-none noop blank-heartbeat noop heartbeat-blank;;
+			heartbeatblank)		set noop none-blank none-blink none-flicker none-flash none-pulse none-default-on noop none-heartbeat heartbeat-none noop;;
+			heartbeattimer)		set none-noop          ;;
+			noneheartbeat)		set noop none-blank noop noop noop noop noop heartbeat-blank noop blank-heartbeat noop;;
+			blankheartbeat)		set noop blank-none noop noop noop noop noop heartbeat-none noop noop none-heartbeat;;
+			timerheartbeat)		set none-noop          ;;
+			default-onheartbeat)	set none-noop          ;;	
+			heartbeatdefault-on)	set none-noop          ;;	
+			nonenone)		set noop none-blank none-blink none-flicker none-flash none-pulse on-none none-default-on none-heartbeat on-none none-default-on;;
+			nonedefault-on)		set noop none-blank none-blink none-flicker none-flash none-pulse none-default-on noop none-heartbeat connect noop;;
+			default-onnone)		set noop blank-none blink-none flicker-none flash-none pulse-none on-none noop blank-heartbeat noop disconnect;;
+					
+			*) exit 1;;
+
+		esac
+
+		shift $cmd
+		case "$1" in
+			noop|"") exit 0;;
+			connect)
+				h_op=$( what $fault )
+				_command $h_op $health
+				_command none $fault
+			;; 
+			disconnect)
+				f_op=$( what $health )
+				_command $f_op $fault
+				_command none $health
+			;;
+			on-*)
+				f_op=${1#*-}
+				_command default-on $health 
+				_command $f_op $fault
+			;;
+			*)
+				h_op=${1%%-*}
+				f_op=${1#*-}
+				_command $h_op $health 
+				_command $f_op $fault
+			;;
+		esac
+
+	}
+
+	dual_state () {
+		# first we try on timer specific case then if that fails, we retry for general timer case
+		( dual_command $(what $health) $(what $fault timer) $1 &> /dev/null) || ( dual_command $( what_class $health ) $( what_class $fault ) $1 &> /dev/null)
+	}
+
+	single_state () {
+		case "$( what_class $health )" in
+			none)		set noop none blink flicker flash pulse default-on default-on heartbeat noop noop;;
+			heartbeat)	set noop none noop noop noop noop noop default-on noop noop noop;;	
+			*)		set noop none blink flicker flash pulse default-on noop heartbeat noop noop;;
+		esac
+
+		shift $cmd
+		_command $1 $health
+	}
+	
+cmd=$( _command $1 )
+if (exit $?);  then
+	set - $(ls -d /sys/class/leds/status\:*\:fault 2>/dev/null); fault=$1
+	set - $(ls -d /sys/class/leds/status\:*\:health 2>/dev/null); health=$1
+
+	if [ "$health" ] && [ "$fault" ]; then
+		dual_state 0  # verify
+		dual_state $cmd
+	elif [ $health ]; then
+		single_state
+	else
+		health=$fault
+		single_state
+	fi
+fi

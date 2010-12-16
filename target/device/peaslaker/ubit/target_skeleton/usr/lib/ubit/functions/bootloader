@@ -52,9 +52,7 @@ BL_CHECKSUM=/tmp/checksum
 			echo "       - nandwrite -s ${bl_addr} ${bl_dev} ${bl_image}"
 			echo "       - nanddump -nol ${BL_SIZE} ${bl_dev} | md5sum"
 			echo Checksum should match: `cat "${BL_CHECKSUM}"` - ${BL_CHECKSUM}
-				fault_hearbeat
-			/bin/ash
-				fault_blink
+			statusled error
 		fi	
 	}
 		
@@ -77,12 +75,12 @@ BL_CHECKSUM=/tmp/checksum
 		bl_checksum
 		if [ -e "${bl_image}" ] && ! ( bl_verify ) ; then
 
-			fault_blink
+			statusled active
 			bl_backup
 			bl_write
 			bl_verify_correct
 
-			fault_off
+			statusled idle
 		fi
 	}
 

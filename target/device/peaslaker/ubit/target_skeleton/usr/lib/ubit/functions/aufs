@@ -13,7 +13,7 @@
 				)
 			fi
 
-		fault_pulse			# this is about to take a long time
+		statusled progress			# this is about to take a long time
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
 
@@ -39,11 +39,11 @@
 
 		cat /tmp/targets > "${OUTDIR}.ubit/targets"
 		umount boot
-		fault_off
+		statusled idle
 	}
 
 	tarball () {
-		fault_pulse			# this is about to take a long time
+		statusled progress			# this is about to take a long time
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
 
@@ -61,5 +61,5 @@
 		mv "${OUTDIR}${uniq}" ${OUTDIR}rootfs.tar 
 
 		umount boot
-		fault_off
+		statusled idle
 	}

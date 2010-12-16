@@ -63,7 +63,7 @@
 		uni="$@"
 		echo $uni
 
-		fault_blink
+		statusled active
 
 		rm /tmp/.scanimages
 		rm /etc/ubit/images
@@ -137,7 +137,7 @@
 				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
 				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
 
-				fault_pulse
+				statusled progress
 				# now we write all the images
 				cat /tmp/.scanimages | while read pth prt lebcnt; do
 					( cd $pth
@@ -153,8 +153,7 @@
 			fi
 
 		done
-		fault_flash
-
+		statusled busy
 	}
 
 	_ubit_password () {
@@ -167,7 +166,7 @@
 	kernel () {
 		cat /etc/ubit/targets.kernel > /tmp/targets
 
-		fault_pulse
+		statusled progress
 
 		echo UBIT.KERNEL:purging old work environment...
 		rm -rf "${OUTDIR}.ubit"
@@ -182,7 +181,7 @@
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			_ubit_scan boot modules
 		)
-		fault_off
+		statusled idle
 	}
 
 
@@ -206,7 +205,7 @@
 			cat /etc/ubit/targets > /tmp/targets	
 		fi
 
-		fault_pulse	# this is about to take a long time
+		statusled progress	# this is about to take a long time
 
 		echo UBIT.PREPARE:purging old work environment...
 		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
@@ -219,6 +218,6 @@
 			_ubit_scan boot modules rootfs ramdisk
 
 		)
-		fault_off
+		statusled idle
 	}
 
