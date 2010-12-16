@@ -34,7 +34,8 @@
 			mv ".ubit/${uniq}" .ubit/rootfs 
 			rm -rf .ubit/rootfs/.ubit*
 
-			_ubit_scan boot modules rootfs ramdisk
+			_ubit_scan boot modules rootfs
+			ready_prepared
 		)
 
 		cat /tmp/targets > "${OUTDIR}.ubit/targets"

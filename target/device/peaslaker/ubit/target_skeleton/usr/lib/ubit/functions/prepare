@@ -54,6 +54,29 @@
 		done
 	}
 
+	ready_prepared () {
+		cat .ubit/images > /etc/ubit/images
+		cat .ubit/extramounts > /etc/ubit/extramounts
+		cat .ubit/ubimounts > /etc/ubit/ubimounts
+		touch /etc/ubit/images
+		touch /etc/ubit/extramounts
+		touch /etc/ubit/ubimounts
+
+		# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
+		mkdir -p .ubit/ramdisk
+		cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+
+		(  	cd .ubit
+			pth=.ubit
+			prt=ramdisk
+		 	_ubit_ubimg 32
+		)
+
+		cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
+		mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+	}
+
 	_ubit_scan () {
 
 		# by the time we get here, there will be:
@@ -113,9 +136,6 @@
 						[ -e boot.tar.gz ] && tar -C .ubit/boot/boot -xzf boot.tar.gz 
 						echo .ubit/boot $prt 32 >> /tmp/.scanimages
 						;;
-					ramdisk)
-						echo .ubit $prt 32 >> /tmp/.scanimages
-						;;
 					modules)
 						mkdir -p .ubit/modules
 						[ -e modules.tar.gz ] && tar -C .ubit/modules -xzf modules.tar.gz
@@ -132,20 +152,14 @@
 					esac
 				done
 
-				# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
-				mkdir -p .ubit/ramdisk
-				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
-
 				statusled progress
+
 				# now we write all the images
 				cat /tmp/.scanimages | while read pth prt lebcnt; do
 					( cd $pth
 						_ubit_ubimg $lebcnt
 					)
 				done
-				cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-				mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 				cat /etc/ubit/images > .ubit/images
 				cat /etc/ubit/extramounts > .ubit/extramounts
 				cat /etc/ubit/ubimounts > .ubit/ubimounts
@@ -190,12 +204,6 @@
 		exit 1  
 	}
 
-	ready_prepared () {
-		cat .ubit/images > /etc/ubit/images
-		cat .ubit/extramounts > /etc/ubit/extramounts
-		cat .ubit/ubimounts > /etc/ubit/ubimounts
-	}
-
 	prepare () {
 		_ubit_password "$1"
 
@@ -215,7 +223,8 @@
 		( tar -C "${OUTDIR}.ubit/rootfs" -xf rootfs.tar ||  
 		tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz ) && ( 
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
-			_ubit_scan boot modules rootfs ramdisk
+			_ubit_scan boot modules rootfs
+			ready_prepared
 
 		)
 		statusled idle
