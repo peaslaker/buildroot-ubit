@@ -3,6 +3,10 @@ UB_BS=512K
 
 #cp output/images/u-boot.kwb output/target/usr/lib/ubit/firmware
 cp ../u-boot/u-boot.kwb output/target/usr/lib/ubit/firmware
+dd if=output/target/usr/lib/ubit/firmware/u-boot.kwb of=output/images/goflexnet.kwb bs=512K conv=sync
+( 	cd output/images
+	cat goflexnet.kwb | md5sum > valid.goflexnet.md5
+)
 cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 (	cd output/target
 	mkdir -p proc

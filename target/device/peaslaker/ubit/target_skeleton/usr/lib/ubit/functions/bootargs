@@ -15,13 +15,13 @@
 	}
 
 	boot_fast () {
-		fw_setenv bootcmd '$bootcmd_fast'
+		fw_setenv bootcmd 'ubi part root; run bootcmd_fast'
 	}
 
 	boot_normal () {
-		fw_setenv bootcmd '$bootcmd_go'
+		fw_setenv bootcmd 'ubi part root; run bootcmd_go'
 	}
 
 	ethaddr () {
-		fw_setenv ethaddr '$1'
+		fw_setenv ethaddr "'"$1"'"
 	}
