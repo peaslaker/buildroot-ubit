@@ -20,10 +20,10 @@ cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
 	find . | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
 cat >> etc/ubit/cpio_list <<EOF
 /etc/ssh_host_key
-/ssh_host_rsa_key
-/ssh_host_dsa_key
-/ssh_host_key.pub
-/ssh_host_rsa_key.pub
+/etc/ssh_host_rsa_key
+/etc/ssh_host_dsa_key
+/etc/ssh_host_key.pub
+/etc/ssh_host_rsa_key.pub
 /etc/ssh_host_dsa_key.pub
 EOF
 	find . | sort | cpio -H newc -o | gzip > ../images/rootfs.cpio.gz
