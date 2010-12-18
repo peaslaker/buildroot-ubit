@@ -44,27 +44,26 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		umount /proc
 	}
 
-. /usr/lib/ubit/functions/general
-
 # then we do the real init
 # function definitions
 
 	help () {
 		echo MAINTENANCE SHELL
 		echo
-		echo The /ubit shell contains a number of useful macros for working with 
+		echo The UBIT shell contains a number of useful macros for working with 
 		echo UBI/UBIFS linux installs.  You can either work interactively 
-		echo with UBIT by running /ubit directly or you can provide a script.
+		echo with UBIT or you can run macros in a script.
 		echo
-		echo The UBIT sequence for the initial install of a linux image from /dev/sda1
+		echo The UBIT sequence for the initial install of a linux tarball from /dev/sda1
 		echo would be:
 		echo
-		echo ubiattach_mtd3
-		echo on /dev/sda1 install [password]
+		echo on /dev/sda1 prepare
+		echo ubiformat_mtd3
+		echo on /dev/sda1 flash
 		echo
 		echo LED flash sequences:
 		echo 
-		echo If you see an Orange heartbeat, this is bad news.  It means the device 
+		echo If you see an orange heartbeat, this is bad news.  It means the device 
 		echo is sitting at a serial console prompt waiting to be rescued from a bad
 		echo flash of mtd0.
 		echo
@@ -72,9 +71,51 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		echo for having reached the maintenance shell, indicating that it is safe 
 		echo to reset the device.
 		echo
-		echo For details on the orange LED meanings, run the /ubit command.
+		echo "For details on the orange LED meanings, run the 'usage' command."
 		echo
 	}
+
+	ubit () {
+		touch /tmp/ubit
+
+		{ 
+			echo export ENV=$ENV
+			echo . $ENV
+			echo . $HOME/.bashrc
+		} > /root/.profile 
+
+
+		. ${ENV}
+		. /tmp/ubit
+	}
+
+	ubit_aufs () {
+
+		export ENV=/usr/lib/ubit/profile/aufs
+
+		cat .ubit.once .ubit.action > /tmp/ubit 2>/dev/null
+		rm .ubit.once 2>/dev/null
+
+		ubit
+	}
+
+	ubit_full () {
+
+		export ENV=/usr/lib/ubit/profile/full
+
+		cat .ubit.once .ubit.action > /tmp/ubit 2>/dev/null
+		rm .ubit.once 2>/dev/null
+
+		ubit
+	}
+
+	ubit_preboot () {
+
+		export ENV=/usr/lib/ubit/profile/full
+
+		ubit
+	}
+
 
 	move_mounts () {
 		for p ; do
@@ -99,7 +140,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
-			mv rw/.ubit.preboot /tmp
+			mv rw/.ubit.preboot /tmp/ubit
 			umount rw
 			exit 1
 		fi
@@ -120,6 +161,15 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		}
 
 		cd ../newroot
+	}
+
+	mount_dismantle () {
+		cd ..
+		umount newroot
+		for prt in `cat /etc/ubit/ubimounts`; do
+			umount  $prt
+		done
+		umount rootfs modules rw
 	}
 
 	mount_finalize () {
@@ -157,8 +207,12 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 			# we process any ubit script now but we limit the options
 			# because we have a mounted aufs partition.
-			ubit-aufs
-			mount_finalize
+			if ( ubit_aufs ); then
+				mount_finalize
+			else
+				mount_dismantle
+				reboot -f
+			fi
 
 		elif [ -e /tmp/.ubit.preboot ]; then
 			echo Waiting for USB system to stabilise
@@ -167,7 +221,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			startup_date
 			/etc/init.d/rcS
 
-			ubit-preboot
+			( ubit_preboot )
 			reboot -f
 
 		else # we are in maintenance mode
@@ -177,29 +231,25 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			startup_date
 			/etc/init.d/rcS
 
-			# source the ub bootloader functions
-			. /usr/lib/ubit/functions/bootloader
-			bl_uptodate
-
 			echo mounting whatever we find on /dev/sda1
 			mount /dev/sda1 rw && {
 				(	
 					cd rw
-					# we process any ubit scripts now
-					ubit-full
-				)  
+					ubit_full
+				)
 				umount /dev/sda1
 			}
 
 			# about to enter the shell, so this is a safe "commands complete" position and gets the green set on
-			statusled inactive
+			statusled ERR
+			statusled ACK
 
 			if [ -e /tmp/reboot ]; then
 				reboot -f
 			fi
 
 			export ENV=/usr/lib/ubit/profile/full
-			exec /bin/busybox init
+			exec /sbin/init
 		fi
 	}
 
@@ -207,8 +257,8 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 setup_env
 statusled busy
 
-mkdir -p /workarea/rw /tmp
-cd /workarea
+mkdir -p /root/rw /tmp
+cd /root
 rootmount
 
 echo "Executing switch_root and spawning init"

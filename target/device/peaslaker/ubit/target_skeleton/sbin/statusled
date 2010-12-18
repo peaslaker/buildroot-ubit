@@ -240,7 +240,7 @@
 
 	dual_state () {
 		# first we try on timer specific case then if that fails, we retry for general timer case
-		( dual_command $(what $health) $(what $fault timer) $1 &> /dev/null) || ( dual_command $( what_class $health ) $( what_class $fault ) $1 &> /dev/null)
+		( dual_command $(what $health) $(what $fault) $1 &> /dev/null) || ( dual_command $( what_class $health ) $( what_class $fault ) $1 &> /dev/null)
 	}
 
 	single_state () {

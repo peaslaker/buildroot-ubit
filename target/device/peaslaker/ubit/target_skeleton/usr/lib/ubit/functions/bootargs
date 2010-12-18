@@ -23,5 +23,5 @@
 	}
 
 	ethaddr () {
-		fw_setenv ethaddr "'"$1"'"
+		fw_setenv ethaddr $1
 	}

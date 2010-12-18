@@ -1,6 +1,6 @@
 	on () {
 		if ! [ -e /tmp/redirect_on ]  && ! [ -e /tmp/redirect_to ]; then 
-			( 	cd /workarea
+			( 	cd /tmp
 				uniq=`ls | md5sum`
 				uniq=${uniq%% *}
 				mkdir ${uniq}
@@ -8,7 +8,7 @@
 					( cd "${uniq}"
 						echo UBIT:operating on $1
 						shift
-						OUTDIR="/workarea/${uniq}/"
+						OUTDIR="/tmp/${uniq}/"
 						echo "$@" > /tmp/redirect_on
 						. /tmp/redirect_on
 						rm /tmp/redirect_on
@@ -22,20 +22,20 @@
 
 	to () {
 		if ! [ -e /tmp/redirect_to ]; then
-			uniq=`ls /workarea | md5sum`
+			uniq=`ls /tmp | md5sum`
 			uniq=${uniq%% *}
-			mkdir -p "/workarea/${uniq}"
-			mount "$1" "/workarea/${uniq}" && {
+			mkdir -p "/tmp/${uniq}"
+			mount "$1" "/tmp/${uniq}" && {
 				(
 					echo UBIT:output to $1
 					shift
-					OUTDIR="/workarea/${uniq}/"
+					OUTDIR="/tmp/${uniq}/"
 					echo "$@" > /tmp/redirect_to
 					. /tmp/redirect_to
 					rm /tmp/redirect_to
 				)
-				umount "/workarea/${uniq}"
+				umount "/tmp/${uniq}"
 			}
-			rm -rf "/workarea/${uniq}"
+			rm -rf "/tmp/${uniq}"
 		fi
 	}

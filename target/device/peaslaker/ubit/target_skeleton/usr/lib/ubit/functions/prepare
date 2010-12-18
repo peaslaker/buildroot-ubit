@@ -136,6 +136,9 @@
 						[ -e boot.tar.gz ] && tar -C .ubit/boot/boot -xzf boot.tar.gz 
 						echo .ubit/boot $prt 32 >> /tmp/.scanimages
 						;;
+					ramdisk)
+						# this noop means that the ramdisk ubimg only gets created by the 'ready_prepared' function
+						;;
 					modules)
 						mkdir -p .ubit/modules
 						[ -e modules.tar.gz ] && tar -C .ubit/modules -xzf modules.tar.gz

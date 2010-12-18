@@ -35,8 +35,6 @@
 		echo "     - boot_normal            # switches on boot from UBIFS as the default"
 		echo "     - ethaddr           # sets the 'ethaddr' variable in the bootloader environment.  Mac address will change at random unless forced"
 		echo 
-		echo "If a password has been set on the ramdisk, every command must be prefixed with the correct password."
-		echo 
 		echo Generally, the Orange LED is used to signal the degree of activity.  
 		echo For example in the install process, when the script is actively scanning
 		echo the source material, the orange LED should flash fast.  When it is engaged
