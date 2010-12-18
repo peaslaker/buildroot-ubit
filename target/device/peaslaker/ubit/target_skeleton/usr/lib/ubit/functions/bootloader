@@ -3,7 +3,7 @@ BL_SIZE=0x80000
 BL_ENV=0x80000
 BL_BS=512K
 BL_ERASE_BLOCKS=4
-BL_TMP=/tmp/tmp.kwb
+BL_TMP=tmp.kwb
 BL_DEV=/dev/mtd0
 BL_CHECKSUM=/tmp/checksum
 
@@ -12,7 +12,7 @@ BL_CHECKSUM=/tmp/checksum
 		for p; do
 			for v in $p/*.kwb.md5; do
 				if ( nanddump -s ${bl_addr} -nol ${BL_SIZE} ${bl_dev} 2>/dev/null | md5sum -c $v -s ) ; then
-					echo UBIT:bl: ${bl_image} matches $v
+					echo UBIT:bl: ${bl_addr} ${bl_dev} matches $v
 					exit 0
 				fi
 			done
@@ -57,62 +57,19 @@ BL_CHECKSUM=/tmp/checksum
 	}
 		
 	bl_backup() {
-		echo UBIT:bl: backing up ${bl_dev} to ${OUTDIR}
-		echo Keep your u-boot backups safe.
 		(
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
-			bl_dump
-			set - `md5sum "${BL_TMP}"`
-			mv "${BL_TMP}" u-boot.$1.kwb
+			uniq=`ls | md5sum`
+			uniq=${uniq%% *}
+			mkdir $uniq
+			(
+				cd $uniq
+				bl_dump
+				set - `md5sum "${BL_TMP}"`
+				mv "${BL_TMP}" ../u-boot.$1.kwb
+				echo ${OUTDIR}u-boot.$1.kwb
+			)
+			rmdir $uniq
 		)
 	}
 
-	bl_install () {
-		bl_image="$1"
-		bl_addr=0
-		bl_dev=${BL_DEV}
-
-		bl_checksum
-		if [ -e "${bl_image}" ] && ! ( bl_verify ) ; then
-
-			statusled active
-			bl_backup
-			bl_write
-			bl_verify_correct
-
-			statusled idle
-		fi
-	}
-
-	bl_uptodate () {
-		bl_install "/usr/lib/ubit/firmware/u-boot.kwb"
-	}
-
-# bl chain functions
-BL_CHAIN_ADDR=0x380000
-BL_CHAIN_DEV=/dev/mtd1
-
-	chain () {
-		# sets up a u-boot image in a section of NAND memory in order to allow chain booting
-		bl_image="$1"
-		bl_addr=${BL_CHAIN_ADDR}
-		bl_dev=${BL_CHAIN_DEV}
-
-		echo UBIT.CHAIN:$1
-		if [ -e "${bl_image}" ]; then 
-			echo UBIT.CHAIN:${bl_image} writing to ${bl_addr} of ${bl_dev}
-
-			bl_checksum
-			bl_write
-			( bl_verify )
-		fi
-	}
-
-	revert () {
-		bl_addr=${BL_CHAIN_ADDR}
-		bl_dev=${BL_CHAIN_DEV}
-		if ( bl_valid /usr/lib/ubit/firmware/original ); then 
-			bl_dump
-			bl_install "${BL_TMP}"
-		fi
-	}
