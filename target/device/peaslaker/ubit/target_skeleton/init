@@ -44,9 +44,6 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		umount /proc
 	}
 
-# then we do the real init
-# function definitions
-
 	help () {
 		echo MAINTENANCE SHELL
 		echo
@@ -77,16 +74,22 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 	ubit () {
 		touch /tmp/ubit
-
 		{ 
 			echo export ENV=$ENV
 			echo . $ENV
 			echo . $HOME/.bashrc
 		} > /root/.profile 
 
+		(
+			
+			reboot() {
+				touch /tmp/reboot		
+			}
 
-		. ${ENV}
-		. /tmp/ubit
+			. ${ENV}
+			. /tmp/ubit
+		)
+		[ -e /tmp/reboot ] && REBOOT=true
 	}
 
 	ubit_aufs () {
@@ -183,6 +186,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	rootmount () {
+		REBOOT=false
 		set - `cat /proc/cmdline`
 		while [ "$1" ]; do
 			case "${1%%=*}" in
@@ -207,11 +211,13 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 			# we process any ubit script now but we limit the options
 			# because we have a mounted aufs partition.
-			if ( ubit_aufs ); then
-				mount_finalize
-			else
+			ubit_aufs
+			
+			if $REBOOT ; then
 				mount_dismantle
-				reboot -f
+				exec reboot -f
+			else
+				mount_finalize
 			fi
 
 		elif [ -e /tmp/.ubit.preboot ]; then
@@ -221,8 +227,8 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			startup_date
 			/etc/init.d/rcS
 
-			( ubit_preboot )
-			reboot -f
+			ubit_preboot
+			exec reboot -f
 
 		else # we are in maintenance mode
 			echo Waiting for USB system to stabilise
@@ -244,11 +250,10 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			statusled ERR
 			statusled ACK
 
-			if [ -e /tmp/reboot ]; then
-				reboot -f
+			if $REBOOT; then
+				exec reboot -f
 			fi
 
-			export ENV=/usr/lib/ubit/profile/full
 			exec /sbin/init
 		fi
 	}

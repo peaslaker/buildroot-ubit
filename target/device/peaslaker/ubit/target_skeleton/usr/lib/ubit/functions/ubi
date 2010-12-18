@@ -34,15 +34,11 @@
 			ubiupdatevol /dev/ubi0_$ubivolno ${prt}.ubimg
 		}
 
-	flash () {
-		# this is where we write to NAND memory  we need a description file for the images, which will either be in the ramdisk or on the working directory
-
-		imgs=/etc/ubit/images
-		[ -e .ubit.images ] && imgs=.ubit.images
+	install () {
 
         	statusled progress	# this is about to take a long time
 
-		cat $imgs | while read pth prt lebcnt
+		cat /etc/ubit/images | while read pth prt lebcnt
 		do
 			( cd $pth 
                 		_ubi_write_partition $prt $lebcnt
@@ -51,9 +47,25 @@
 		statusled idle
 	}
 
-	flash_once () {
-		rm "${OUTDIR}uInitrd"
-		rm "${OUTDIR}boot/uImage"
-		flash
+	kernel () {
+		statusled progress
+		cat /etc/ubit/targets.kernel > /tmp/targets
+
+		echo UBIT.KERNEL:purging old work environment...
+		rm -rf "${OUTDIR}.ubit"
+		mkdir -p "${OUTDIR}.ubit/boot" "${OUTDIR}.ubit/rootfs"
+
+		# The kernel content can either be unpacked or gzipped tarball in the working directory.  Unpacked 
+		# is handled here. tar.gz is handled in _ubit_scan
+
+		echo UBIT.KERNEL:extracting boot...
+		tar -c boot lib/modules | tar -C "${OUTDIR}.ubit/rootfs" -x 
+
+		(
+			[ "${OUTDIR}" ] && cd "${OUTDIR}"
+			_ubit_scan boot modules
+		)
+		statusled idle
 	}
+
 

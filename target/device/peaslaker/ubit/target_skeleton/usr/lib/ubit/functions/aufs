@@ -1,3 +1,28 @@
+	install () {
+		if [ -b "$1" ] &&
+		( $(	cd /tmp
+			uniq=`ls | md5sum`
+			uniq=${uniq%% *}
+			mkdir "${uniq}"
+			mount "$1" "${uniq}" && {
+				( 	cd "${uniq}"
+					is_prepared
+				)
+				umount "${uniq}"
+			}		
+			rm -rf "${uniq}"
+		) ); then
+			{	echo on $1 ready_prepared
+				echo ubiformat_mtd3
+				echo on $1 install
+				if [ "$2" = "mkrw" ];then
+				echo mkrw
+				fi
+			} 	>> "${OUTDIR}.ubit.preboot"
+			exit 1
+		fi
+	}
+
 	snapshot () {
 		_ubit_password "$1"
 
