@@ -1,38 +1,132 @@
 #!/bin/bash
-UB_BS=512K
 
-#cp output/images/u-boot.kwb output/target/usr/lib/ubit/firmware
-cp ../u-boot/u-boot.kwb output/target/usr/lib/ubit/firmware
-dd if=output/target/usr/lib/ubit/firmware/u-boot.kwb of=output/images/goflexnet.kwb bs=512K conv=sync
-( 	cd output/images
-	cat goflexnet.kwb | md5sum > valid.goflexnet.md5
-)
-cp output/build/u-boot-custom/tools/env/fw_env.config  output/target/etc/
-(	cd output/target
-	mkdir -p proc
-	mkdir -p sys
-	( cd usr/lib/ubit/firmware
-		for bl in *.kwb original/*.kwb; do
-			dd if="$bl" bs=${UB_BS} count=1 conv=sync | md5sum > "$bl.md5"
-		done
-	)
-	mkdir -p etc/ubit var/run var/lock var/log dev/pts
-	touch etc/ubit/ubimounts
-	touch etc/ubit/extramounts
-	touch etc/ubit/images
-#	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
-	find . | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
-cat >> etc/ubit/cpio_list <<EOF
-/etc/ssh_host_key
-/etc/ssh_host_rsa_key
-/etc/ssh_host_dsa_key
-/etc/ssh_host_key.pub
-/etc/ssh_host_rsa_key.pub
-/etc/ssh_host_dsa_key.pub
-EOF
-	find . | sort | cpio -H newc -o | gzip > ../images/rootfs.cpio.gz
-	)
+BASEDIR="../ubit"
+BRDIR="../buildroot"
+UBOOTDIR="../u-boot"
 
-ver=`cat output/target/etc/issue`
+TARGDIR=output/target
+IMAGEDIR=output/images
 
-mkimage -A arm -O linux -T ramdisk -a 0x0 -e 0x0 -n "${ver}" -d output/images/rootfs.cpio.gz output/images/uInitrd 
+SKELDIR=target/device/peaslaker/ubit/target_skeleton
+FWDIR=usr/lib/ubit/firmware
+
+TARGFWDIR=${TARGDIR}/${FWDIR}
+SKELFWDIR=${SKELDIR}/${FWDIR}
+STAGEDIR="${BASEDIR}/staging"
+
+UBITVER=v0.4
+UBOOTVER="ubit-${UBITVER}"
+BOARDS="goflexnet dockstar"
+
+	_dd () {
+		dd bs=512K count=1 conv=sync
+	}
+
+
+	ubootize () {
+		(
+			cd ${UBOOTDIR}
+
+			if [ -z "${CROSS_COMPILE}" ]; then
+				export PATH='/usr/local/codesourcery/arm-2009q3/bin':${PATH}
+				export ARCH='arm'
+				export CROSS_COMPILE='arm-none-linux-gnueabi-'
+				echo "NOW in crosscompile environment for ${ARCH} (${CROSS_COMPILE})"
+			else
+				echo "ALREADY in crosscompile environment for ${ARCH} (${CROSS_COMPILE})"
+				exit 1
+			fi
+
+			if ( git checkout ${UBOOTVER} ); then
+				head=`git rev-parse --verify --short HEAD`
+				mkdir -p "${BASEDIR}/${head}"
+
+				for bd in $BOARDS; do
+					KWBNAME="${BASEDIR}/${head}/${bd}.kwb"
+					if ! [ -f ${KWBNAME} ]; then
+						make mrproper
+						make ${bd}_config
+						make -j 12 u-boot.kwb
+						{
+							echo md5="'$(cat u-boot.kwb | _dd | md5sum)'" 
+							echo builddate='"'$(date -u +%Y%m%d%H%M%SUTC)'"'
+						} > ${KWBNAME}.log
+						cat u-boot.kwb > ${KWBNAME}
+
+						cat tools/env/fw_env.config > ${BRDIR}/${SKELDIR}/etc
+						cat tools/env/fw_env.config > ${BRDIR}/${TARGDIR}/etc
+					fi
+					. ${KWBNAME}.log
+					echo "${md5}" > ${BRDIR}/${SKELFWDIR}/${bd}.${builddate}-${head}.kwb.md5
+					echo "${md5}" > ${BRDIR}/${TARGFWDIR}/${bd}.${builddate}-${head}.kwb.md5
+					echo "${md5}" > ${BASEDIR}/valid.${bd}.md5
+					cat ${KWBNAME} > "${BRDIR}/${TARGFWDIR}/${bd}.kwb"
+					cat ${KWBNAME} | _dd > "${BASEDIR}/${bd}.kwb"
+				done
+			else
+				echo failed on: git-checkout or git-merge v2010.09-ubit-${UBITVER}-01-transitory v2010.09-ubit-${UBITVER}-02-general v2010.09-ubit-${UBITVER}-04-seagate
+				exit 1
+			fi
+		)
+	}
+
+	originalfw_md5 () {
+		( 	cd ${TARGFWDIR}
+			for bl in original/*.kwb; do
+				cat "${bl}" | _dd | md5sum > "$bl.md5"
+			done
+		)
+	}
+
+	fs_additions () {
+		(	cd ${TARGDIR}
+
+			mkdir -p proc sys etc/ubit var/run var/lock var/log dev/pts
+
+			# cpio doesn't like its list including non-existent files, so we generate empty files that we want to propagate
+			touch etc/ubit/ubimounts
+			touch etc/ubit/extramounts
+			touch etc/ubit/images
+
+			# at the moment we propagate the latest firmware, but this may not be desirable in the long run
+		#	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
+			find . | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
+
+			# the ssh keys will always be generated on startup
+			{
+				echo /etc/ssh_host_key
+				echo /etc/ssh_host_rsa_key
+				echo /etc/ssh_host_dsa_key
+				echo /etc/ssh_host_key.pub
+				echo /etc/ssh_host_rsa_key.pub
+				echo /etc/ssh_host_dsa_key.pub
+			} >> etc/ubit/cpio_list
+
+		)
+	}
+
+	create_ramdisk () {
+		(	cd ${TARGDIR}
+			find . | sort | cpio -H newc -o | gzip
+		)  > ${IMAGEDIR}/rootfs.cpio.gz
+
+		ver="UBIT-${UBITVER}-`scripts/setlocalversion`"
+
+		# Finally we generated the ramdisk
+		( 	cd ${IMAGEDIR}
+			mkimage -A arm -O linux -T ramdisk -a 0x0 -e 0x0 -n "${ver}" -d rootfs.cpio.gz uInitrd 
+		)
+	}
+
+if ubootize; then
+	originalfw_md5
+	fs_additions
+	create_ramdisk
+fi
+
+
+
+
+
+
+

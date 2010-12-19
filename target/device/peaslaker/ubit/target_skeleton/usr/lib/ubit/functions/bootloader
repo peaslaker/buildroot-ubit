@@ -1,41 +1,46 @@
 # bootloader variables
-BL_SIZE=0x80000
-BL_ENV=0x80000
-BL_BS=512K
-BL_ERASE_BLOCKS=4
-BL_TMP=tmp.kwb
-BL_DEV=/dev/mtd0
-BL_CHECKSUM=/tmp/checksum
+_SIZE=0x80000
+_BS=512K
+_ERASE_BLOCKS=4
+_ENV=0x80000
 
-	bl_valid () {
+_ADDR=0
+_DEV=/dev/mtd0
+
+# bl chain variables
+_CHAIN_ADDR=0x380000
+_CHAIN_DEV=/dev/mtd1
+
+_TMP=tmp.kwb
+_CHECKSUM=/tmp/checksum
+
+	_valid () {
 		[ $# = 0 ] && set - .
-		for p; do
-			for v in $p/*.kwb.md5; do
-				if ( nanddump -s ${bl_addr} -nol ${BL_SIZE} ${bl_dev} 2>/dev/null | md5sum -c $v -s ) ; then
-					echo UBIT:bl: ${bl_addr} ${bl_dev} matches $v
-					exit 0
-				fi
-			done
+		for v in ${1}/*.kwb.md5; do
+			if ( nanddump -s ${_addr} -nol ${_SIZE} ${_dev} 2>/dev/null | md5sum -c $v -s ) ; then
+				echo $v
+				exit 0
+			fi
 		done
 		exit 1 
 	}
 
-	bl_write () {
-		flash_erase ${bl_dev} ${bl_addr} ${BL_ERASE_BLOCKS}
-		dd if="${bl_image}" bs=${BL_BS} count=1 conv=sync 2>/dev/null | nandwrite -s ${bl_addr} ${bl_dev} -
+	_write () {
+		flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}
+		dd if="${_image}" bs=${_BS} count=1 conv=sync 2>/dev/null | nandwrite -s ${_addr} ${_dev} -
 	}
 
-	bl_dump () {
-		nanddump -s ${bl_addr} -nol ${BL_SIZE} -f "${BL_TMP}" ${bl_dev} 2>/dev/null
+	_dump () {
+		nanddump -s ${_addr} -nol ${_SIZE} -f "${_TMP}" ${_dev} 2>/dev/null
 	}
 
-	bl_checksum () {
-		dd if="${bl_image}" bs=${BL_BS} count=1 conv=sync 2>/dev/null | md5sum > "${BL_CHECKSUM}"
-		echo UBIT:bl: ${bl_image} checksum `cat "${BL_CHECKSUM}"`
+	_checksum () {
+		dd if="${_image}" bs=${_BS} count=1 conv=sync 2>/dev/null | md5sum > "${_CHECKSUM}"
+		echo UBIT:bl: ${_image} checksum `cat "${_CHECKSUM}"`
 	}
 
-	bl_verify () {
-		if ( nanddump -s ${bl_addr} -nol ${BL_SIZE} ${bl_dev} 2>/dev/null | md5sum -c "${BL_CHECKSUM}" -s ); then
+	_verify () {
+		if ( nanddump -s ${_addr} -nol ${_SIZE} ${_dev} 2>/dev/null | md5sum -c "${_CHECKSUM}" -s ); then
 			echo UBIT:bl: u-boot checksum match OK.
 			exit 0
 		else
@@ -44,19 +49,19 @@ BL_CHECKSUM=/tmp/checksum
 		fi
 	}
 
-	bl_verify_correct () {
-		if ! ( bl_verify ); then
+	_verify_correct () {
+		if ! ( _verify ); then
 			echo You had better sort this out before rebooting as the u-boot is now probably corrupt.
 			echo Commands that will be needed:
-			echo "       - flash_erase ${bl_dev} ${bl_addr} ${BL_ERASE_BLOCKS}"
-			echo "       - nandwrite -s ${bl_addr} ${bl_dev} ${bl_image}"
-			echo "       - nanddump -nol ${BL_SIZE} ${bl_dev} | md5sum"
-			echo Checksum should match: `cat "${BL_CHECKSUM}"` - ${BL_CHECKSUM}
+			echo "       - flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}"
+			echo "       - nandwrite -s ${_addr} ${_dev} ${_image}"
+			echo "       - nanddump -nol ${_SIZE} ${_dev} | md5sum"
+			echo Checksum should match: `cat "${_CHECKSUM}"` - ${_CHECKSUM}
 			statusled error
 		fi	
 	}
 		
-	bl_backup() {
+	_backup() {
 		(
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			uniq=`ls | md5sum`
@@ -64,9 +69,9 @@ BL_CHECKSUM=/tmp/checksum
 			mkdir $uniq
 			(
 				cd $uniq
-				bl_dump
-				set - `md5sum "${BL_TMP}"`
-				mv "${BL_TMP}" ../u-boot.$1.kwb
+				_dump
+				set - `md5sum "${_TMP}"`
+				mv "${_TMP}" ../u-boot.$1.kwb
 				echo ${OUTDIR}u-boot.$1.kwb
 			)
 			rmdir $uniq

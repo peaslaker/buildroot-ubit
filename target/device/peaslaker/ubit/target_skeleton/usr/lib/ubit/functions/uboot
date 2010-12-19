@@ -2,30 +2,38 @@
 		(
 			. /usr/lib/ubit/functions/bootloader
 
-			bl_install "/usr/lib/ubit/firmware/u-boot.kwb"
+			_addr=0
+			_dev=${_DEV}
+
+			match=`( _valid /usr/lib/ubit/firmware/original ) || ( _valid /usr/lib/ubit/firmware )`	
+			if [ "${match}" ]; then
+				_image="${match%%.*}.kwb"
+				_checksum
+				if ! (_verify); then
+					_write
+					( _valid /usr/lib/ubit/firmware )
+					_verify_correct
+				fi
+			fi
 		)
 	}
-
-# bl chain functions
-BL_CHAIN_ADDR=0x380000
-BL_CHAIN_DEV=/dev/mtd1
 
 	uboot_chain () {
 		(
 			. /usr/lib/ubit/functions/bootloader
 
 			# sets up a u-boot image in a section of NAND memory in order to allow chain booting
-			bl_image="$1"
-			bl_addr=${BL_CHAIN_ADDR}
-			bl_dev=${BL_CHAIN_DEV}
+			_image="$1"
+			_addr=${_CHAIN_ADDR}
+			_dev=${_CHAIN_DEV}
 
 			echo UBIT.CHAIN:$1
-			if [ -e "${bl_image}" ]; then 
-				echo UBIT.CHAIN:${bl_image} writing to ${bl_addr} of ${bl_dev}
+			if [ -e "${_image}" ]; then 
+				echo UBIT.CHAIN:${_image} writing to ${_addr} of ${_dev}
 
-				bl_checksum
-				bl_write
-				( bl_verify )
+				_checksum
+				_write
+				( _verify )
 			fi
 		)
 	}
@@ -34,17 +42,20 @@ BL_CHAIN_DEV=/dev/mtd1
 		(
 			. /usr/lib/ubit/functions/bootloader
 
-			bl_addr=${BL_CHAIN_ADDR}
-			bl_dev=${BL_CHAIN_DEV}
-			if ( bl_valid /usr/lib/ubit/firmware/original ); then 
+			_addr=${_CHAIN_ADDR}
+			_dev=${_CHAIN_DEV}
+
+			if ( _valid /usr/lib/ubit/firmware/original ); then 
 				( cd /tmp
-					bl_image=$(bl_backup)
-					bl_addr=0
-					bl_dev=$BL_DEV
-					bl_checksum
-					bl_write
-					( bl_valid /usr/lib/ubit/firmware/original )
-					bl_verify_correct
+
+					_image=$(_backup)
+					_addr=0
+					_dev=$(_DEV}
+
+					_checksum
+					_write
+					( _valid /usr/lib/ubit/firmware/original )
+					_verify_correct
 				)
 			fi
 		)
@@ -54,20 +65,20 @@ BL_CHAIN_DEV=/dev/mtd1
 		(
 			. /usr/lib/ubit/functions/bootloader
 
-			bl_image="$1"
-			bl_addr=0
-			bl_dev=${BL_DEV}
+			_image="/usr/lib/ubit/firmware/$1"
+			_addr=${_ADDR}
+			_dev=${_DEV}
 
-			bl_checksum
-			if [ -e "${bl_image}" ] && ! ( bl_verify ) ; then
+			_checksum
+			if [ -e "${_image}" ] && ! ( _verify ) ; then
 
 				statusled active
-				echo UBIT:bl: backing up ${bl_dev} to $(bl_backup)
+				echo UBIT:bl: backing up ${_dev} to $(_backup)
 				echo Keep your u-boot backups safe.
-				bl_write
-				bl_verify_correct
-
+				_write
 				statusled idle
+				_verify_correct
+
 			fi
 		)
 	}
