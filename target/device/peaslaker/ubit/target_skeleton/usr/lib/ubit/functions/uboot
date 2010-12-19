@@ -48,9 +48,9 @@
 			if ( _valid /usr/lib/ubit/firmware/original ); then 
 				( cd /tmp
 
-					_image=$(_backup)
+					_image=$( _backup )
 					_addr=0
-					_dev=$(_DEV}
+					_dev=${_DEV}
 
 					_checksum
 					_write

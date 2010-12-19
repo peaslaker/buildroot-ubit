@@ -77,7 +77,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		{ 
 			echo export ENV=$ENV
 			echo . $ENV
-			echo . $HOME/.bashrc
+			echo . /root/.bashrc
 		} > /root/.profile 
 
 		(
@@ -220,7 +220,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				mount_finalize
 			fi
 
-		elif [ -e /tmp/.ubit.preboot ]; then
+		elif [ -e /tmp/ubit ]; then # this got set from preboot actions
 			echo Waiting for USB system to stabilise
 			sleep 10
 
@@ -238,13 +238,12 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			/etc/init.d/rcS
 
 			echo mounting whatever we find on /dev/sda1
-			mount /dev/sda1 rw && {
-				(	
-					cd rw
-					ubit_full
-				)
-				umount /dev/sda1
-			}
+			mount /dev/sda1 rw
+			(	
+				cd rw
+				ubit_full
+			)
+			umount /dev/sda1
 
 			# about to enter the shell, so this is a safe "commands complete" position and gets the green set on
 			statusled ERR

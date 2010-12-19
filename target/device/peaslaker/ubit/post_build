@@ -53,8 +53,8 @@ BOARDS="goflexnet dockstar"
 						} > ${KWBNAME}.log
 						cat u-boot.kwb > ${KWBNAME}
 
-						cat tools/env/fw_env.config > ${BRDIR}/${SKELDIR}/etc
-						cat tools/env/fw_env.config > ${BRDIR}/${TARGDIR}/etc
+						cat tools/env/fw_env.config > ${BRDIR}/${SKELDIR}/etc/fw_env.config
+						cat tools/env/fw_env.config > ${BRDIR}/${TARGDIR}/etc/fw_env.config
 					fi
 					. ${KWBNAME}.log
 					echo "${md5}" > ${BRDIR}/${SKELFWDIR}/${bd}.${builddate}-${head}.kwb.md5
@@ -75,6 +75,12 @@ BOARDS="goflexnet dockstar"
 			for bl in original/*.kwb; do
 				cat "${bl}" | _dd | md5sum > "$bl.md5"
 			done
+		)
+	}
+
+	fs_deletions () {
+		(	cd ${TARGDIR}
+			mv etc/init.d/S50sshd etc/init.d/sshd
 		)
 	}
 
@@ -123,6 +129,7 @@ BOARDS="goflexnet dockstar"
 if ubootize; then
 	originalfw_md5
 	fs_additions
+	fs_deletions
 	create_ramdisk
 fi
 
