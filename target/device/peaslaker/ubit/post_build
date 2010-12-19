@@ -113,8 +113,10 @@ BOARDS="goflexnet dockstar"
 		ver="UBIT-${UBITVER}-`scripts/setlocalversion`"
 
 		# Finally we generated the ramdisk
-		( 	cd ${IMAGEDIR}
-			mkimage -A arm -O linux -T ramdisk -a 0x0 -e 0x0 -n "${ver}" -d rootfs.cpio.gz uInitrd 
+		mkimage -A arm -O linux -T ramdisk -a 0x0 -e 0x0 -n "${ver}" -d ${IMAGEDIR}/rootfs.cpio.gz ${BASEDIR}/uInitrd
+		(
+			cd ${BASEDIR}
+			md5sum ./uInitrd >> checksum.md5
 		)
 	}
 
