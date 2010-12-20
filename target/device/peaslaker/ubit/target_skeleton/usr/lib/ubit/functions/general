@@ -2,6 +2,16 @@
 	usage () {
 		echo "The following special macro instructions are supported by the UBIT ramdisk."
 		echo
+		echo Session
+		echo "     - interactive         # pauses execution of scripts to allow interactive login"
+		echo "     - finished            # when entered from an ssh login, kills the interactive session"
+		echo "     - reboot              # kills any interactive sessions and forces a reboot"
+		echo "     - halt                # kills and interactive sessions and forces a machine halt"
+		echo "     - statusled  <off|on|blink|flicker|flash|pulse> # managed led status indication transitions"
+		echo "     - statusled  ERR      # forces led status to orange heartbeat"
+		echo "     - statusled  ACK      # only way to exit from status "error" recovers led status to green heartbeat"
+		echo "     - statusled  <disconnect|connect>  # managed transitions from orange to green status display"
+		echo
 		echo Install preparation macros
 		echo "     - on [device] [macro] # specify a block device other than /dev/sda1 to be used as the working area for the command"
 		echo "     - to [device] [macro] # specify a block device other than /dev/sda1 to be used as the output area for the command"
@@ -9,20 +19,21 @@
 		echo "     - tarball             # creates rootfs.tar from a snapshot of the normal mountable running system"
 		echo "     - snapshot            # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
 		echo "     - prepare             # creates ubifs images and matched installer ramdisk from rootfs.tar.gz (optionally rootfs.tar), modules.tar.gz and boot.tar.gz"
-		echo "     - install <dev> [mkrw]# sets ubifs images on <dev> to be installed and reboots to fulfill the installation"
+		echo "     - on <dev> install [mkrw] # sets ubifs images on <dev> to be installed and needs reboot to fulfill the installation"
 		echo
-		echo "Install execution macros (need to be run by ramdisk launched from external install media)"
+		echo "Install execution macros (need to be run by ramdisk launched from external install media or in /.ubit.preboot)"
 		echo "     - ubiformat_mtd3    # format mtd3 as a ubi partition"
 		echo "     - ubiattach_mtd3    # attach mtd3 as a ubi partition"
 		echo "     - mkrw              # creates a rw UBIFS partition using all remaining available logical erase blocks "
 		echo "     - rmrw              # delete a preexisting rw UBIFS partition"
 		echo "     - kernel            # creates ubifs images for immediate installation from a boot.tar.gz/modules.tar.gz kernel distribution"
-		echo "     - install           # flash writes ubifs images"
+		echo "     - ready_prepared    # used to match the running ramdisk to previously prepared ubifs images.  Only necessary"
+		echo "                         # when you have rebooted since running prepare.  Is used to upgrade the ramdisk."
+		echo "     - install [mkrw]    # flash writes ubifs images. Optionally creates a UBIFS rw partition"
 		echo
 		echo "Firmware installation macros"
-		echo "     - dockstar     # install original dockstar u-boot as chain u-boot on mtd1"
-		echo "     - goflexnet    # install original goflexnet u-boot as chain u-boot on mtd1"
-		echo "     - revert       # revert to pogoplug; using previously installed chain u-boot"
+		echo "     - uboot_install <firmware>   # firmware can be one of: goflexnet | dockstar | original/goflexnet | original/dockstar"
+		echo "     - uboot_uptodate             # if you have updated the ramdisk, this brings the U-Boot version up to date"
 		echo
 		echo "Boot sequence adjustments"
 		echo "     - nc_off    # switch U-Boot network console off"
@@ -41,6 +52,11 @@
 		echo indicates a need to intervene before rebooting because you have a brick on 
 		echo your hands.
 		echo 
+		echo The ramdisk also provides a number of utilities including:
+		echo "     - fw_setenv/fw_printenv, e2fsprogs, mtd-utils"
+		echo 
+		echo For a list of the utilities provided by Busybox just invoke the Busybox program:
+		echo "     - busybox"
 		}
 
 

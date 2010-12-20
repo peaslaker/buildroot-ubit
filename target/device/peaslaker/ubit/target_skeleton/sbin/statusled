@@ -13,31 +13,31 @@
 
 		case "$1" in
 		verify )		echo 0;;
-		off|OFF|none)
+		off|OFF|none|0)
 			[ "$led" ] && _trigger none
 					echo 1;;
-		inactive|idle|IDL|blink)
+		inactive|idle|IDL|blink|1)
 			[ "$led" ] && {
 			_trigger timer
 			_value delay_off 1000
 			_value delay_on 10
 			}
 					echo 2;;
-		active|ACT|flicker)
+		active|ACT|flicker|act|2)
 			[ "$led" ] && {
 			_trigger timer
 			_value delay_off 100
 			_value delay_on 10
 			}
 					echo 3;;
-		busy|BUS|flash)
+		busy|BUS|flash|3)
 			[ "$led" ] && {
 			_trigger timer
 			_value delay_off 100
 			_value delay_on 100
 			}
 					echo 4;;
-		progress|PRO|pulse)
+		progress|PRO|pulse|pro|4)
 			[ "$led" ] && {
 			_trigger timer
 			_value delay_off 100
@@ -49,13 +49,13 @@
 			_value delay_off 0
 			_value delay_on 0
 		;;
-		on|ON|OK|default-on)
+		on|ON|OK|default-on|9|8|7|6|5)
 			[ "$led" ] && _trigger default-on
 					echo 6;;
-		acknowledge|ACK)	echo 7;;
-		error|ERR)		echo 8;;
-		connect|CONN)		echo 9;;
-		disconnect|DISC)	echo 10;;
+		acknowledge|ACK|ack)	echo 7;;
+		error|ERR|err)		echo 8;;
+		connect|CONN|conn)		echo 9;;
+		disconnect|DISC|disc)	echo 10;;
 		heartbeat) 		_trigger heartbeat;;
 		*) 			echo 0; exit 1;;
 		esac			
@@ -127,27 +127,27 @@
 
 		# first we cover translation of aliases.
 		case $trigger in
-		on|ON|OK)
+		on|ON|OK|9)
 			trigger=default-on
 			set $trigger
 		;;
-		off|OFF)
+		off|OFF|0)
 			trigger=none
 			set $trigger
 		;;
-		inactive|idle|IDL|blink)
+		inactive|idle|IDL|blink|1)
 			trigger=timer
 			set blink
 		;;
-		active|ACT|flicker)
+		active|ACT|flicker|2)
 			trigger=timer
 			set flicker
 		;;
-		busy|BUS|flash)
+		busy|BUS|flash|3)
 			trigger=timer
 			set flash
 		;;
-		progress|PRO|pulse)
+		progress|PRO|pulse|pro|4)
 			trigger=timer
 			set pulse
 		;;
@@ -253,19 +253,22 @@
 		shift $cmd
 		_command $1 $health
 	}
-	
-cmd=$( _command $1 )
-if (exit $?);  then
-	set - $(ls -d /sys/class/leds/status\:*\:fault 2>/dev/null); fault=$1
-	set - $(ls -d /sys/class/leds/status\:*\:health 2>/dev/null); health=$1
 
-	if [ "$health" ] && [ "$fault" ]; then
-		dual_state 0  # verify
-		dual_state $cmd
-	elif [ $health ]; then
-		single_state
-	else
-		health=$fault
-		single_state
+fault=$(set $(ls -d /sys/class/leds/status\:*\:fault 2>/dev/null); echo $1)
+health=$(set $(ls -d /sys/class/leds/status\:*\:health 2>/dev/null); echo $1)
+
+for p; do
+	cmd=$( _command $p )
+	if (exit $?);  then
+
+		if [ "$health" ] && [ "$fault" ]; then
+			dual_state 0  # verify
+			dual_state $cmd
+		elif [ $health ]; then
+			single_state
+		else
+			health=$fault
+			single_state
+		fi
 	fi
-fi
+done

@@ -1,31 +1,23 @@
 	install () {
-		if [ -b "$1" ] &&
-		( $(	cd /tmp
-			uniq=`ls | md5sum`
-			uniq=${uniq%% *}
-			mkdir "${uniq}"
-			mount "$1" "${uniq}" && {
-				( 	cd "${uniq}"
-					is_prepared
-				)
-				umount "${uniq}"
-			}		
-			rm -rf "${uniq}"
-		) ); then
-			{	echo on $1 ready_prepared
+		local RW
+		[ "$1" = "mkrw" ] && RW="mkrw" 
+
+		if [ -f /tmp/redirect_on ]; then
+			set `cat /tmp/redirect_on`
+			{	echo on $2 ready_prepared
 				echo ubiformat_mtd3
-				echo on $1 install
-				if [ "$2" = "mkrw" ];then
-				echo mkrw
-				fi
-			} 	>> "${OUTDIR}.ubit.preboot"
-			exit 1
+				echo on $2 install $RW
+			} 	> "/root/newroot/.ubit.preboot"
+			echo "The following commands have been set as preboot actions:"
+			echo
+			echo "`cat /root/newroot/.ubit.preboot`"
+			echo
+			echo "The machine is now rebooting to complete the install process."
+			reboot
 		fi
 	}
 
 	snapshot () {
-		_ubit_password "$1"
-
 		if [ -e .ubit.targets ]; then
 			cat .ubit.targets > /tmp/targets
 		else
@@ -73,11 +65,8 @@
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
 
-		uniq=`ls | md5sum`
+		uniq=`ls ${OUTDIR} | md5sum`
 		uniq=${uniq%% *}
-
-		echo UBIT.TARBALL:purging old work environment...
-		rm -rf "${OUTDIR}.ubit" "${OUTDIR}.prt"
 
 		mkdir -p boot     # have to make sure the mount point exists.  e.g. pacman -R kernel26-withlinux will remove the mountpoint
 		mount -t ubifs ubi:boot boot

@@ -44,6 +44,9 @@
                 		_ubi_write_partition $prt $lebcnt
                 	)
         	done
+		if [ "$1" = "mkrw" ]; then
+			mkrw
+		fi
 		statusled idle
 	}
 

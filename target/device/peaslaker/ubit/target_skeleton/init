@@ -73,50 +73,54 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	ubit () {
+		export ENV=/usr/lib/ubit/profile/$1
+		touch /tmp/shutdown
 		touch /tmp/ubit
 		{ 
 			echo export ENV=$ENV
 			echo . $ENV
 			echo . /root/.bashrc
+			echo 'finished () { set `pidof init`; shift $(($#-2)); kill -9 $1; }'
+			echo 'reboot () { echo reboot > /tmp/shutdown; finished; }'
+			echo 'halt () { echo halt > /tmp/shutdown; finished; }'
 		} > /root/.profile 
-
-		(
-			
-			reboot() {
-				touch /tmp/reboot		
-			}
-
-			. ${ENV}
-			. /tmp/ubit
-		)
-		[ -e /tmp/reboot ] && REBOOT=true
+		reboot() { echo reboot > /tmp/shutdown; exit 1; }
+		halt() { echo halt > /tmp/shutdown; exit 1; }
+		. ${ENV}
+		. /tmp/ubit
 	}
 
 	ubit_aufs () {
+		cat .ubit.boot > /tmp/ubit 2>/dev/null
+		rm .ubit.boot 2>/dev/null
 
-		export ENV=/usr/lib/ubit/profile/aufs
-
-		cat .ubit.once .ubit.action > /tmp/ubit 2>/dev/null
-		rm .ubit.once 2>/dev/null
-
-		ubit
+		(
+			interactive () { statusled ERR ACK; /etc/init.d/rcS; /sbin/init; exit 1; }
+			ubit aufs
+			exit 0
+		)
+		SHUTDOWN=`cat /tmp/shutdown`
 	}
 
 	ubit_full () {
+		cat .ubit.boot .ubit.installer > /tmp/ubit 2>/dev/null
+		rm .ubit.boot 2>/dev/null
 
-		export ENV=/usr/lib/ubit/profile/full
-
-		cat .ubit.once .ubit.action > /tmp/ubit 2>/dev/null
-		rm .ubit.once 2>/dev/null
-
-		ubit
+		(
+			interactive () { statusled ERR ACK; /sbin/init; exit 1; }
+			ubit full
+			exit 0
+		)
+		SHUTDOWN=`cat /tmp/shutdown`
 	}
 
 	ubit_preboot () {
-
-		export ENV=/usr/lib/ubit/profile/full
-
-		ubit
+		(
+			interactive () { statusled ERR ACK; /sbin/init; exit 1; }
+			ubit full
+			exit 0
+		)
+		SHUTDOWN=`cat /tmp/shutdown`
 	}
 
 
@@ -186,7 +190,6 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	rootmount () {
-		REBOOT=false
 		set - `cat /proc/cmdline`
 		while [ "$1" ]; do
 			case "${1%%=*}" in
@@ -211,15 +214,19 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 			# we process any ubit script now but we limit the options
 			# because we have a mounted aufs partition.
-			ubit_aufs
-			
-			if $REBOOT ; then
-				mount_dismantle
-				exec reboot -f
-			else
+			echo reboot > /tmp/shutdown
+			if ( ubit_aufs ); then  
+				statusled on
 				mount_finalize
+			else
+				killall ifplugd; statusled disconnect on; sleep 3; statusled flicker
+				mount_dismantle
+				sleep 3; statusled off
+				case "$SHUTDOWN" in
+					reboot|halt) $SHUTDOWN -f;;
+				esac
+				reboot -f
 			fi
-
 		elif [ -e /tmp/ubit ]; then # this got set from preboot actions
 			echo Waiting for USB system to stabilise
 			sleep 10
@@ -227,8 +234,14 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			startup_date
 			/etc/init.d/rcS
 
+			echo reboot > /tmp/shutdown
 			ubit_preboot
-			exec reboot -f
+
+			killall ifplugd; statusled disconnect on; sleep 3; statusled off
+			case "$SHUTDOWN" in
+				reboot|halt) $SHUTDOWN -f;;
+			esac
+			reboot -f
 
 		else # we are in maintenance mode
 			echo Waiting for USB system to stabilise
@@ -241,19 +254,25 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			mount /dev/sda1 rw
 			(	
 				cd rw
+				echo halt > /tmp/shutdown
 				ubit_full
 			)
 			umount /dev/sda1
 
-			# about to enter the shell, so this is a safe "commands complete" position and gets the green set on
-			statusled ERR
-			statusled ACK
+			case "$SHUTDOWN" in
+				reboot|halt) 
+					killall ifplugd; statusled disconnect on; sleep 3; statusled off
+					$SHUTDOWN -f;;
+			esac
 
-			if $REBOOT; then
-				exec reboot -f
-			fi
+			echo interactive > .ubit.installer
+			ubit_full
 
-			exec /sbin/init
+			killall ifplugd; statusled disconnect on; sleep 3; statusled off
+			case "$SHUTDOWN" in
+				reboot) reboot -f;;
+			esac
+			halt -f
 		fi
 	}
 

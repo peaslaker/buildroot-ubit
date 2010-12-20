@@ -87,24 +87,24 @@
 				if [ "${prt}" = "" ]; then
 					echo UBIT.SCAN:${pth}, leaving a stub
 					mkdir -p .ubit/rootfs/${pth}
-					rm -rf .ubit/rootfs/${pth}/*
+					rm -rf .ubit/rootfs/${pth}/* 2> /dev/null
 				elif [ "${prt}" = "tmpfs" ]; then
 					echo UBIT.SCAN:${pth}, leaving a stub for tmpfs mount
 					mkdir -p .ubit/rootfs/${pth}
-					rm -rf .ubit/rootfs/${pth}/*
+					rm -rf .ubit/rootfs/${pth}/* 2> /dev/null
 					echo mount -t tmpfs none $pth >> /etc/ubit/extramounts
 				elif [ "${prt}" = "ubi" ]; then
 					prt=${ubiprt}
-					echo UBIT.SCAN:${pth}, moved to staging area for ubi vol ${prt} 
+					echo UBIT.SCAN:${pth}, moved to staging area for ${prt}.ubimg 
 					uni="${uni} ${prt}"
 					mkdir -p .ubit/${prt}/${pth}
-					mv .ubit/rootfs/${pth}/* .ubit/${prt}/${pth}
-					rm -rf .ubit/rootfs/${pth}
+					mv .ubit/rootfs/${pth}/* .ubit/${prt}/${pth} 2>/dev/null
+					rm -rf .ubit/rootfs/${pth} 2> /dev/null
 				else
 					echo UBIT.SCAN:${pth}, moved archive area .prt/${prt}
 					mkdir -p .prt/${prt}/${pth}
-					mv .ubit/rootfs/${pth}/* .prt/${prt}/${pth}
-					rm -rf .ubit/rootfs/${pth}
+					mv .ubit/rootfs/${pth}/* .prt/${prt}/${pth} 2> /dev/null
+					rm -rf .ubit/rootfs/${pth} 2> /dev/null
 				fi
 			else
 				echo UBIT.SCAN:all targets read, now processing ubi target volumes...

@@ -7,10 +7,10 @@
 				mount "$1" "${uniq}" && {
 					( cd "${uniq}"
 						echo UBIT:operating on $1
+						echo  on "$@" > /tmp/redirect_on
 						shift
 						OUTDIR="/tmp/${uniq}/"
-						echo "$@" > /tmp/redirect_on
-						. /tmp/redirect_on
+						$@
 						rm /tmp/redirect_on
 					)
 					umount "${uniq}"
@@ -28,10 +28,10 @@
 			mount "$1" "/tmp/${uniq}" && {
 				(
 					echo UBIT:output to $1
+					echo to "$@" > /tmp/redirect_to
 					shift
 					OUTDIR="/tmp/${uniq}/"
-					echo "$@" > /tmp/redirect_to
-					. /tmp/redirect_to
+					$@
 					rm /tmp/redirect_to
 				)
 				umount "/tmp/${uniq}"
