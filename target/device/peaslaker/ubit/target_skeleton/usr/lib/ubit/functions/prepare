@@ -47,7 +47,7 @@
 			# this odd twist sets the ramdisk contents after the scan has completed but before the writes begin
 			mkdir -p .ubit/ramdisk
 			cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installed: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
+			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "UBIT-`cat /etc/br-version`" -d /tmp/initramfs.cpio.gz .ubit/ramdisk/uInitrd
 
 			(  	cd .ubit
 				pth=.ubit
@@ -56,7 +56,7 @@
 			)
 
 			cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "Installer: `cat /etc/issue`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
+			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "UBIT-`cat /etc/br-version`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 		fi
 
 		statusled idle
