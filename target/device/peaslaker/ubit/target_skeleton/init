@@ -156,16 +156,15 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 	mount_aufs () {
 		mkdir ../newroot ../rootfs ../modules
+		br='br:../rw=rw'
 
-		mount -t ubifs ubi:modules ../modules -o ro,noatime && \
-		mount -t ubifs ubi:rootfs  ../rootfs  -o ro,noatime && \
-		mount -t aufs  aufs        ../newroot -o br:../rw=rw:../rootfs=rr:../modules=rr && {
-			for prt in `cat /etc/ubit/ubimounts`; do
-				mkdir ../$prt
-				mount -t ubifs ubi:$prt ../$prt -o ro,noatime && \ 
-				mount ../newroot -o remount,append:../${prt}=rr
-			done
-		}
+		mount -t ubifs ubi:modules ../modules -o ro,noatime && br=${br}':../modules=rr'
+		mount -t ubifs ubi:rootfs  ../rootfs  -o ro,noatime && br=${br}':../rootfs=rr'
+		for prt in `cat /etc/ubit/ubimounts`; do
+			mkdir ../$prt
+			mount -t ubifs ubi:$prt ../$prt -o ro,noatime && br=${br}":../${prt}=rr" 
+		done
+		mount -t aufs  aufs        ../newroot -o ${br}
 
 		cd ../newroot
 	}

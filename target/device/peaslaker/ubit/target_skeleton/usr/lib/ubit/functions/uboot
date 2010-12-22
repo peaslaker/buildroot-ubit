@@ -2,18 +2,24 @@
 		(
 			. /usr/lib/ubit/functions/bootloader
 
-			_addr=0
+			_addr=${_ADDR}
 			_dev=${_DEV}
 
 			match=`( _valid /usr/lib/ubit/firmware/original ) || ( _valid /usr/lib/ubit/firmware )`	
 			if [ "${match}" ]; then
+				echo Existing firmware identified as matching: $match 
 				_image="${match%%.*}.kwb"
 				_checksum
-				if ! (_verify); then
+				if (_verify); then
+					echo The installed firmware is already up-to-date
+				else
+					echo Writing latest ${match%%.*} firmware to ${_DEV}
 					_write
 					( _valid /usr/lib/ubit/firmware )
 					_verify_correct
 				fi
+			else
+				echo The existing firmware cannot be identified, so no update has been performed.
 			fi
 		)
 	}

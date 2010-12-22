@@ -1,8 +1,10 @@
 # bootloader variables
-_SIZE=0x80000
-_BS=512K
 _ERASE_BLOCKS=4
-_ENV=0x80000
+_WRITE_BS=512K
+_SIZE=0x80000
+_CHK_BS=384K
+_CHK_SIZE=0x60000
+_ENV=0x60000
 
 _ADDR=0
 _DEV=/dev/mtd0
@@ -17,7 +19,7 @@ _CHECKSUM=/tmp/checksum
 	_valid () {
 		[ $# = 0 ] && set - .
 		for v in ${1}/*.kwb.md5; do
-			if ( nanddump -s ${_addr} -nol ${_SIZE} ${_dev} 2>/dev/null | md5sum -c $v -s ) ; then
+			if ( nanddump -s ${_addr} -nol ${_CHK_SIZE} ${_dev} 2>/dev/null | md5sum -c $v -s ) ; then
 				echo $v
 				exit 0
 			fi
@@ -25,22 +27,26 @@ _CHECKSUM=/tmp/checksum
 		exit 1 
 	}
 
-	_write () {
-		flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}
-		dd if="${_image}" bs=${_BS} count=1 conv=sync 2>/dev/null | nandwrite -s ${_addr} ${_dev} -
+	_dd () {
+		dd if="${_image}" bs=${1} count=1 conv=sync 2>/dev/null
 	}
 
 	_dump () {
-		nanddump -s ${_addr} -nol ${_SIZE} -f "${_TMP}" ${_dev} 2>/dev/null
+		nanddump -s ${_addr} -nol ${1} ${_dev} 2>/dev/null
+	}
+
+	_write () {
+		flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}
+		_dd {_WRITE_BS} | nandwrite -s ${_addr} ${_dev} -
 	}
 
 	_checksum () {
-		dd if="${_image}" bs=${_BS} count=1 conv=sync 2>/dev/null | md5sum > "${_CHECKSUM}"
+		_dd ${_WRITE_BS} | md5sum > "${_CHECKSUM}"
 		echo UBIT:bl: ${_image} checksum `cat "${_CHECKSUM}"`
 	}
 
 	_verify () {
-		if ( nanddump -s ${_addr} -nol ${_SIZE} ${_dev} 2>/dev/null | md5sum -c "${_CHECKSUM}" -s ); then
+		if ( _dump ${_SIZE} | md5sum -c "${_CHECKSUM}" -s ); then
 			echo UBIT:bl: u-boot checksum match OK.
 			exit 0
 		else
@@ -54,7 +60,7 @@ _CHECKSUM=/tmp/checksum
 			echo You had better sort this out before rebooting as the u-boot is now probably corrupt.
 			echo Commands that will be needed:
 			echo "       - flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}"
-			echo "       - nandwrite -s ${_addr} ${_dev} ${_image}"
+			echo "       - dd if=${_image} bs=${_WRITE_BS} count=1 | nandwrite -s ${_addr} ${_dev} -"
 			echo "       - nanddump -nol ${_SIZE} ${_dev} | md5sum"
 			echo Checksum should match: `cat "${_CHECKSUM}"` - ${_CHECKSUM}
 			statusled error
@@ -69,7 +75,7 @@ _CHECKSUM=/tmp/checksum
 			mkdir $uniq
 			(
 				cd $uniq
-				_dump
+				_dump ${_SIZE} > ${_TMP}
 				set - `md5sum "${_TMP}"`
 				mv "${_TMP}" ../u-boot.$1.kwb
 				echo ${OUTDIR}u-boot.$1.kwb
