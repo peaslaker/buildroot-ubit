@@ -1,8 +1,17 @@
 #!/bin/bash
 
-BASEDIR="../ubit"
-BRDIR="../buildroot"
+UBITVER=v0.5
+UBOOTVER=v2010.09-ubit-${UBITVER}
+KERNVER=v2.6.36-ubit
+
+BOARDS="goflexnet dockstar"
+
+BUILDDIR="../ubit/builds"
+BASEDIR="../ubit/image"
+STAGEDIR="../ubit/staging"
 UBOOTDIR="../u-boot"
+KERNDIR="../linux-2.6"
+BRDIR="../buildroot"
 
 TARGDIR=output/target
 IMAGEDIR=output/images
@@ -12,21 +21,14 @@ FWDIR=usr/lib/ubit/firmware
 
 TARGFWDIR=${TARGDIR}/${FWDIR}
 SKELFWDIR=${SKELDIR}/${FWDIR}
-STAGEDIR="${BASEDIR}/staging"
-
-UBITVER=v0.5
-UBOOTVER="ubit-${UBITVER}"
-BOARDS="goflexnet dockstar"
 
 
-	ubootize () {
+	kernelize () {
 		(
-			cd ${UBOOTDIR}
+			cd ${KERNDIR}
 
 			if [ -z "${CROSS_COMPILE}" ]; then
 				export ARCH='arm'
-#				export PATH='/usr/local/codesourcery/arm-2009q3/bin':${PATH}
-#				export CROSS_COMPILE='arm-none-linux-gnueabi-'
 				export PATH='/usr/src/buildroot/output/staging/usr/bin':${PATH}
 				export CROSS_COMPILE='arm-unknown-linux-uclibcgnueabi-'
 				echo "NOW in crosscompile environment for ${ARCH} (${CROSS_COMPILE})"
@@ -35,13 +37,89 @@ BOARDS="goflexnet dockstar"
 				exit 1
 			fi
 
-			if ( git checkout ${UBOOTVER} ); then
-				head=`git rev-parse --verify --short HEAD`
-				mkdir -p "${BASEDIR}/${head}"
+			shorthead=`git rev-parse --verify --short ${KERNVER}`
+			if [ $? = 0 ]; then
+				KERNNAME="${BUILDDIR}/linux-2.6/${shorthead}"
+				mkdir -p "${KERNNAME}"
 
+				if ! [ -f "${KERNNAME}/boot.tar.gz" ] || ! [ -f "${KERNNAME}/modules.tar.gz" ]|| ! [ -f "${KERNNAME}/uImage.md5" ]; then
+					if ! ( git checkout ${KERNVER} ); then
+						echo Unable to checkout $KERNVER on ${KERNDIR}
+						git status
+						exit 1
+					fi
+
+					make mrproper
+					make ubit_defconfig
+					make -j 12 uImage modules
+
+					rm -rf ${STAGEDIR}
+					mkdir -p ${STAGEDIR}
+					INSTALL_MOD_PATH=${STAGEDIR} make modules_install
+					kver=`ls ${STAGEDIR}/lib/modules`
+
+					mkdir -p ${STAGEDIR}/usr/src/$kver/usr
+					(
+						cd ${STAGEDIR}/usr/src
+						ln -sf $kver linux-2.6
+					)
+
+					make headers_install INSTALL_HDR_PATH=${STAGEDIR}/usr/src/$kver/usr
+
+					mkdir -p ${STAGEDIR}/boot/$kver
+
+					cp arch/arm/boot/uImage ${STAGEDIR}/boot/$kver/
+					cp .config ${STAGEDIR}/boot/$kver
+					(
+						cd ${STAGEDIR}/boot
+						ln -sf $kver boot
+						ln -sf boot/uImage uImage
+						echo "`md5sum ./$kver/uImage`" 
+					) > ${KERNNAME}/uImage.md5
+
+					tar -C ${STAGEDIR}/boot -c . -zf "${KERNNAME}/boot.tar.gz"
+					tar -C ${STAGEDIR} -c lib usr -zf "${KERNNAME}/modules.tar.gz"
+					#tar -C ${STAGEDIR} -c lib -zf "${BASEDIR}/modules.tar.gz"
+				fi
+				cat ${KERNNAME}/uImage.md5 > ${BASEDIR}/checksum.md5
+				cat ${KERNNAME}/boot.tar.gz > ${BASEDIR}/boot.tar.gz
+				cat ${KERNNAME}/modules.tar.gz > ${BASEDIR}/modules.tar.gz
+				( cd $BASEDIR
+					md5sum ./boot.tar.gz ./modules.tar.gz >> checksum.md5
+				)
+			else
+				echo "The kernel version ${KERNVER} could not be found in the repository"
+				exit 1
+			fi
+		)
+	}
+
+	ubootize () {
+		(
+			cd ${UBOOTDIR}
+
+			if [ -z "${CROSS_COMPILE}" ]; then
+				export ARCH='arm'
+				export PATH='/usr/src/buildroot/output/staging/usr/bin':${PATH}
+				export CROSS_COMPILE='arm-unknown-linux-uclibcgnueabi-'
+				echo "NOW in crosscompile environment for ${ARCH} (${CROSS_COMPILE})"
+			else
+				echo "ALREADY in crosscompile environment for ${ARCH} (${CROSS_COMPILE})"
+				exit 1
+			fi
+
+			shorthead=`git rev-parse --verify --short HEAD`
+			if [ $? = 0 ]; then
+				mkdir -p "${BUILDDIR}/u-boot/${shorthead}"
 				for bd in $BOARDS; do
-					KWBNAME="${BASEDIR}/${head}/${bd}.kwb"
+					KWBNAME="${BUILDDIR}/u-boot/${shorthead}/${bd}.kwb"
 					if ! [ -f ${KWBNAME} ]; then
+						if ! ( git checkout ${UBOOTVER} ); then
+							echo Unable to checkout U-Boot $KERNVER on ${KERNDIR}
+							git status
+							exit 1
+						fi
+
 						make mrproper
 						make ${bd}_config
 						make -j 12 u-boot.kwb
@@ -55,16 +133,17 @@ BOARDS="goflexnet dockstar"
 						cat tools/env/fw_env.config > ${BRDIR}/${TARGDIR}/etc/fw_env.config
 					fi
 					. ${KWBNAME}.log
-					echo "${md5}" > ${BRDIR}/${SKELFWDIR}/${bd}.${builddate}-${head}.kwb.md5
-					echo "${md5}" > ${BRDIR}/${TARGFWDIR}/${bd}.${builddate}-${head}.kwb.md5
+					echo "${md5}" > ${BRDIR}/${SKELFWDIR}/${bd}.${builddate}-${shorthead}.kwb.md5
+					echo "${md5}" > ${BRDIR}/${TARGFWDIR}/${bd}.${builddate}-${shorthead}.kwb.md5
 					cat ${KWBNAME} > "${BRDIR}/${TARGFWDIR}/${bd}.kwb"
 					cat ${KWBNAME} | dd bs=512K count=1 conv=sync  > "${BASEDIR}/${bd}.kwb"
 					cat ${BASEDIR}/${bd}.kwb | md5sum > ${BASEDIR}/valid.${bd}.md5
 				done
 			else
-				echo failed on: git-checkout or git-merge v2010.09-ubit-${UBITVER}-01-transitory v2010.09-ubit-${UBITVER}-02-general v2010.09-ubit-${UBITVER}-04-seagate
+				echo "The U-Boot version ${UBOOTVER} could not be found in the repository"
 				exit 1
 			fi
+			exit 0
 		)
 	}
 
@@ -124,7 +203,7 @@ BOARDS="goflexnet dockstar"
 		)
 	}
 
-if ubootize; then
+if ubootize && kernelize; then
 	originalfw_md5
 	fs_additions
 	fs_deletions
