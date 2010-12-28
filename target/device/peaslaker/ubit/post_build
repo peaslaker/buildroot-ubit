@@ -17,7 +17,8 @@ TARGDIR=output/target
 IMAGEDIR=output/images
 
 SKELDIR=target/device/peaslaker/ubit/target_skeleton
-FWDIR=usr/lib/ubit/firmware
+FWDIR=usr/share/ubit/firmware
+TARGORIGDIR=${TARGDIR}/usr/share/ubit/original
 
 TARGFWDIR=${TARGDIR}/${FWDIR}
 SKELFWDIR=${SKELDIR}/${FWDIR}
@@ -148,16 +149,10 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 	}
 
 	originalfw_md5 () {
-		( 	cd ${TARGFWDIR}
-			for bl in original/*.kwb; do
+		( 	cd ${TARGORIGDIR}
+			for bl in *.kwb; do
 				dd if=${bl} bs=512K count=1 conv=sync | md5sum > "$bl.md5"
 			done
-		)
-	}
-
-	fs_deletions () {
-		(	cd ${TARGDIR}
-			mv etc/init.d/S50sshd etc/init.d/sshd
 		)
 	}
 
@@ -206,7 +201,6 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 if ubootize && kernelize; then
 	originalfw_md5
 	fs_additions
-	fs_deletions
 	create_ramdisk
 fi
 

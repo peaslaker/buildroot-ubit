@@ -52,7 +52,7 @@
 
 	kernel () {
 		statusled progress
-		cat /etc/ubit/targets.kernel > /tmp/targets
+		cat /usr/share/ubit/targets/kernel > /tmp/targets
 
 		echo UBIT.KERNEL:purging old work environment...
 		rm -rf "${OUTDIR}.ubit"

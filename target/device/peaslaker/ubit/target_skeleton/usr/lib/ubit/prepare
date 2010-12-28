@@ -1,8 +1,8 @@
 	template () {
 		if [ "$1" ]; then
-			[ -e "/etc/ubit/targets.$1" ] && cat "/etc/ubit/targets.$1" > /etc/ubit/targets
+			[ -e "/usr/share/ubit/targets/$1" ] && cat "/usr/share/ubit/targets/$1" > /etc/ubit/targets
 		else
-			cat /etc/ubit/targets.default > /etc/ubit/targets
+			cat /usr/share/ubit/targets/default > /etc/ubit/targets
 		fi
 	}
 

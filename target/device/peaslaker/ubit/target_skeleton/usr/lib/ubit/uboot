@@ -1,11 +1,11 @@
 	uboot_uptodate () {
 		(
-			. /usr/lib/ubit/functions/bootloader
+			. /usr/lib/ubit/bootloader
 
 			_addr=${_ADDR}
 			_dev=${_DEV}
 
-			match=`( _valid /usr/lib/ubit/firmware/original ) || ( _valid /usr/lib/ubit/firmware )`	
+			match=`( _valid /usr/share/ubit/original ) || ( _valid /usr/share/ubit/firmware )`	
 			if [ "${match}" ]; then
 				echo Existing firmware identified as matching: $match 
 				_image="${match%%.*}.kwb"
@@ -15,7 +15,7 @@
 				else
 					echo Writing latest ${match%%.*} firmware to ${_DEV}
 					_write
-					( _valid /usr/lib/ubit/firmware )
+					( _valid /usr/share/ubit/firmware )
 					_verify_correct
 				fi
 			else
@@ -26,7 +26,7 @@
 
 	uboot_chain () {
 		(
-			. /usr/lib/ubit/functions/bootloader
+			. /usr/lib/ubit/bootloader
 
 			# sets up a u-boot image in a section of NAND memory in order to allow chain booting
 			_image="$1"
@@ -46,12 +46,12 @@
 
 	uboot_revert () {
 		(
-			. /usr/lib/ubit/functions/bootloader
+			. /usr/lib/ubit/bootloader
 
 			_addr=${_CHAIN_ADDR}
 			_dev=${_CHAIN_DEV}
 
-			if ( _valid /usr/lib/ubit/firmware/original ); then 
+			if ( _valid /usr/share/ubit/original ); then 
 				( cd /tmp
 
 					_image=$( _backup )
@@ -60,7 +60,7 @@
 
 					_checksum
 					_write
-					( _valid /usr/lib/ubit/firmware/original )
+					( _valid /usr/share/ubit/original )
 					_verify_correct
 				)
 			fi
@@ -69,9 +69,9 @@
 
 	uboot_install () {
 		(
-			. /usr/lib/ubit/functions/bootloader
+			. /usr/lib/ubit/bootloader
 
-			_image="/usr/lib/ubit/firmware/$1"
+			_image="/usr/share/ubit/firmware/$1"
 			_addr=${_ADDR}
 			_dev=${_DEV}
 

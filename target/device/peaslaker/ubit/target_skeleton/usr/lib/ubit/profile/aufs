@@ -1,7 +1,7 @@
-. /usr/lib/ubit/functions/general
-. /usr/lib/ubit/functions/redirect
-. /usr/lib/ubit/functions/uboot
-. /usr/lib/ubit/functions/bootargs
-. /usr/lib/ubit/functions/prepare
-. /usr/lib/ubit/functions/aufs
+. /usr/lib/ubit/general
+. /usr/lib/ubit/redirect
+. /usr/lib/ubit/uboot
+. /usr/lib/ubit/bootargs
+. /usr/lib/ubit/prepare
+. /usr/lib/ubit/aufs
 
