@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot version: 2010.11-00049-g0cb03c9-dirty
-# Fri Dec 17 09:17:04 2010
+# Buildroot version: 2010.11-00062-gb06f5a8-dirty
+# Wed Jan  5 01:35:19 2011
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_arm=y
@@ -57,8 +57,8 @@ BR2_GCC_TARGET_ABI="aapcs-linux"
 # BR2_TARGET_ARMLTD is not set
 # BR2_TARGET_ATMEL is not set
 # BR2_TARGET_KWIKBYTE is not set
-BR2_TARGET_GENERIC_HOSTNAME="ubit0-4"
-BR2_TARGET_GENERIC_ISSUE="UBIT v0.4 by peaslaker"
+BR2_TARGET_GENERIC_HOSTNAME="ubit0-5"
+BR2_TARGET_GENERIC_ISSUE="UBIT v0.5 by peaslaker"
 # BR2_TARGET_GENERIC_GETTY is not set
 
 #

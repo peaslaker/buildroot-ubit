@@ -37,7 +37,7 @@ _CHECKSUM=/tmp/checksum
 
 	_write () {
 		flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}
-		_dd {_WRITE_BS} | nandwrite -s ${_addr} ${_dev} -
+		_dd ${_WRITE_BS} | nandwrite -s ${_addr} ${_dev} -
 	}
 
 	_checksum () {
@@ -60,7 +60,7 @@ _CHECKSUM=/tmp/checksum
 			echo You had better sort this out before rebooting as the u-boot is now probably corrupt.
 			echo Commands that will be needed:
 			echo "       - flash_erase ${_dev} ${_addr} ${_ERASE_BLOCKS}"
-			echo "       - dd if=${_image} bs=${_WRITE_BS} count=1 | nandwrite -s ${_addr} ${_dev} -"
+			echo "       - dd if=${_image} bs=${_WRITE_BS} conv=sync | nandwrite -s ${_addr} ${_dev} -"
 			echo "       - nanddump -nol ${_SIZE} ${_dev} | md5sum"
 			echo Checksum should match: `cat "${_CHECKSUM}"` - ${_CHECKSUM}
 			statusled error
