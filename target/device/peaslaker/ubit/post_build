@@ -2,7 +2,7 @@
 
 UBITVER=v0.5
 UBOOTVER=v2010.09-ubit-${UBITVER}
-KERNVER=v2.6.37-ubit
+KERNVER=v2.6.36-ubit-v0.5
 
 BOARDS="goflexnet dockstar"
 
@@ -52,7 +52,10 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 
 					make mrproper
 					make ubit_defconfig
-					make -j 12 uImage modules
+					if ! ( make -j 12 uImage modules ); then
+						echo Kernel build failed
+						exit 1
+					fi
 
 					rm -rf ${STAGEDIR}
 					mkdir -p ${STAGEDIR}
@@ -92,6 +95,7 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 				echo "The kernel version ${KERNVER} could not be found in the repository"
 				exit 1
 			fi
+			exit 0
 		)
 	}
 
