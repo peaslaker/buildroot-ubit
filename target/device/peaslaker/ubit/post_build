@@ -2,7 +2,7 @@
 
 UBITVER=v0.5
 UBOOTVER=v2010.09-ubit-${UBITVER}
-KERNVER=v2.6.36.2-ubit
+KERNVER=v2.6.37-ubit
 
 BOARDS="goflexnet dockstar"
 
@@ -10,7 +10,7 @@ BUILDDIR="../ubit/builds"
 BASEDIR="../ubit/image"
 STAGEDIR="../ubit/staging"
 UBOOTDIR="../u-boot"
-KERNDIR="../linux-2.6-stable"
+KERNDIR="../linux-2.6"
 BRDIR="../buildroot"
 
 TARGDIR=output/target
