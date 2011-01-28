@@ -158,7 +158,7 @@
 		statusled busy
 	}
 
-	prepare () {
+	_prepare () {
 		if [ -e .ubit.targets ]; then
 			cat .ubit.targets > /tmp/targets
 		else
@@ -172,13 +172,19 @@
 		mkdir -p "${OUTDIR}.ubit/rootfs" "${OUTDIR}.prt"
 
 		echo UBIT.PREPARE:extracting rootfs...
-		( tar -C "${OUTDIR}.ubit/rootfs" -xf rootfs.tar ||  
-		tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz ) && ( 
+		tar -C "${OUTDIR}.ubit/rootfs" -xf rootfs.tar || tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz
+	}
+
+	_prepare_scan () {
+		(
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			_ubit_scan boot modules rootfs
 			ready_prepared
-
 		)
 		statusled idle
 	}
 
+	prepare () {
+		_prepare
+		_prepare_scan
+	}

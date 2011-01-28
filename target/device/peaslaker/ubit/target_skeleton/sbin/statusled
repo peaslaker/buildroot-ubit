@@ -62,6 +62,7 @@
 	}
 
 	trigger_of () {
+		local t
 		t=$(cat $1/trigger)
 		t=${t#*\[}
 		t=${t%%]*}
@@ -69,6 +70,7 @@
 	}
 
 	specific_timer () {
+		local t
 		led=$1
 		shift
 		t=$1
@@ -105,7 +107,7 @@
 			;;
 			*)
 				t=flash
-				echo 100 > $led_delay_off
+				echo 100 > $led/delay_off
 				don=100
 			;;
 		esac
@@ -129,11 +131,11 @@
 		case $trigger in
 		on|ON|OK|9)
 			trigger=default-on
-			set $trigger
+			set default-on
 		;;
 		off|OFF|0)
 			trigger=none
-			set $trigger
+			set none
 		;;
 		inactive|idle|IDL|blink|1)
 			trigger=timer
@@ -161,12 +163,12 @@
 		if [ "$t" = "$1" ]; then
 			echo $1  # This is the successful result - the sanitized name of the state we are in
 			exit 0
-		elif [ "$t" != "timer" ]; then
-			echo $t  # The fail case returns the sanitized name of the state we are in
-			exit 1
-		else
+		elif [ "$t" = "timer" ]; then # $1 may be a specific class of timer in which case the timer class will be verified
 			echo $(specific_timer $led $1)
 			exit $?
+		else
+			echo $t  # The fail case returns the sanitized name of the state we are in
+			exit 1
 		fi 
 	}	
 

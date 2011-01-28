@@ -17,7 +17,7 @@
 		fi
 	}
 
-	snapshot () {
+	_snapshot () {
 		if [ -e .ubit.targets ]; then
 			cat .ubit.targets > /tmp/targets
 		else
@@ -50,7 +50,11 @@
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
 			mv ".ubit/${uniq}" .ubit/rootfs 
 			rm -rf .ubit/rootfs/.ubit*
+		)
+	}
 
+	_snapshot_scan () {
+		(
 			_ubit_scan boot modules rootfs
 			ready_prepared
 		)
@@ -59,6 +63,11 @@
 		umount boot
 		statusled idle
 	}
+
+	snapshot () {
+		_snapshot
+		_snapshot_scan
+		}
 
 	tarball () {
 		statusled progress			# this is about to take a long time
