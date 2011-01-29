@@ -38,6 +38,9 @@
 
         	statusled progress	# this is about to take a long time
 
+		( ubinfo -d 0 -N silent &> /dev/null ) && ubirename silent ramdisk
+		( ubinfo -d 0 -N fast &> /dev/null ) && ubirename fast ramdisk
+
 		cat /etc/ubit/images | while read pth prt lebcnt
 		do
 			( cd $pth 

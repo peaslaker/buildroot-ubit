@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot version: 2010.11-00062-gb06f5a8-dirty
-# Wed Jan  5 01:35:19 2011
+# Buildroot version: 2010.11-00069-gc0ecf06-dirty
+# Sat Jan 29 16:18:09 2011
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_arm=y
@@ -451,7 +451,7 @@ BR2_PACKAGE_MTD_UBIFORMAT=y
 BR2_PACKAGE_MTD_UBIMKVOL=y
 BR2_PACKAGE_MTD_UBINFO=y
 # BR2_PACKAGE_MTD_UBINIZE is not set
-# BR2_PACKAGE_MTD_UBIRENAME is not set
+BR2_PACKAGE_MTD_UBIRENAME=y
 BR2_PACKAGE_MTD_UBIRMVOL=y
 # BR2_PACKAGE_MTD_UBIRSVOL is not set
 BR2_PACKAGE_MTD_UBIUPDATEVOL=y
