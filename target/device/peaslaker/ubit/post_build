@@ -155,7 +155,7 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 	originalfw_md5 () {
 		( 	cd ${TARGORIGDIR}
 			for bl in *.kwb; do
-				dd if=${bl} bs=512K count=1 conv=sync | md5sum > "$bl.md5"
+				dd if=${bl} bs=384K count=1 conv=sync | md5sum > "${bl}.md5"
 			done
 		)
 	}
