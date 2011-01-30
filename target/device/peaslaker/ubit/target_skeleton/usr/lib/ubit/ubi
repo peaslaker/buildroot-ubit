@@ -1,3 +1,31 @@
+	_boot_mode () {
+		case $1 in
+			fast|silent|ramdisk)
+				if ( ubinfo -d 0 -N $1 ); then
+				# do nothing
+				elif ( ubinfo -d 0 -N ramdisk &>/dev/null ); then
+					ubirename /dev/ubi0 ramdisk $1
+				elif ( ubinfo -d 0 -N fast &>/dev/null ); then
+					ubirename /dev/ubi0 fast $1
+				elif ( ubinfo -d 0 -N silent &>/dev/null ); then
+					ubirename /dev/ubi0 silent $1
+				fi
+			;;
+		esac		
+	}
+
+	boot_silent () {
+		_boot_mode silent
+	}
+
+	boot_fast () {
+		_boot_mode fast
+	}
+
+	boot_normal () {
+		_boot_mode ramdisk
+	}
+
 	rmrw () {
 		( ubinfo -d 0 -N rw &>/dev/null ) && ubirmvol /dev/ubi0 -N rw
 	}
@@ -38,8 +66,7 @@
 
         	statusled progress	# this is about to take a long time
 
-		( ubinfo -d 0 -N silent &> /dev/null ) && ubirename silent ramdisk
-		( ubinfo -d 0 -N fast &> /dev/null ) && ubirename fast ramdisk
+		_boot_mode ramdisk
 
 		cat /etc/ubit/images | while read pth prt lebcnt
 		do

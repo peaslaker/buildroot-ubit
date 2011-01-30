@@ -6,22 +6,6 @@
 		fw_setenv ubi_args 'ubi_args_tmpfs'
 	}
 
-	nc_off () {
-		fw_setenv preboot
-	}
-
-	nc_on () {
-		fw_setenv preboot 'run nc_test nc_start'
-	}
-
-	boot_fast () {
-		fw_setenv bootcmd 'ubi part root; run bootcmd_fast'
-	}
-
-	boot_normal () {
-		fw_setenv bootcmd 'ubi part root; run bootcmd_go'
-	}
-
 	ethaddr () {
 		fw_setenv ethaddr $1
 	}

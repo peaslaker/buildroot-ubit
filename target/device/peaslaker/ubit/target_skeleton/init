@@ -133,7 +133,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 	mount_rw () {
 		[ "$rtype" ] || rtype=auto
-		[ "$rpath" ] || rpath=`findfs LABEL=RW`
+		[ "$rpath" ] || rpath=$(findfs LABEL=RW)
 		[ "$rpath" ] || rpath=/dev/sda1
 		[ "$rdelay" ] && sleep $rdelay
 		case "$rtype" in
