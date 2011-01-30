@@ -76,6 +76,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		export ENV=/usr/lib/ubit/profile/$1
 		touch /tmp/shutdown
 		touch /tmp/ubit
+		shift
 		{ 
 			echo export ENV=$ENV
 			echo . $ENV
@@ -83,6 +84,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			echo 'finished () { set `pidof init`; shift $(($#-2)); kill -9 $1; }'
 			echo 'reboot () { echo reboot > /tmp/shutdown; finished; }'
 			echo 'halt () { echo halt > /tmp/shutdown; finished; }'
+			echo "$@"
 		} > /root/.profile 
 		reboot() { echo reboot > /tmp/shutdown; exit 1; }
 		halt() { echo halt > /tmp/shutdown; exit 1; }
@@ -96,7 +98,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 		(
 			interactive () { statusled ERR ACK; /etc/init.d/rcS; /sbin/init; exit 1; }
-			ubit aufs
+			ubit aufs "cd /root/newroot"
 			exit 0
 		)
 		SHUTDOWN=`cat /tmp/shutdown`
@@ -132,9 +134,10 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	mount_rw () {
-		[ "$rtype" ] || rtype=auto
-		[ "$rpath" ] || rpath=$(findfs LABEL=rw)
+		local rpath
+		rpath=$(findfs LABEL=rw)
 		[ "$rpath" ] || rpath=/dev/sda1
+		[ "$rtype" ] || rtype=auto
 		[ "$rdelay" ] && sleep $rdelay
 		case "$rtype" in
 			"tmpfs")
@@ -145,6 +148,25 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				;;
 			*)
 				mount -t ubifs ubi:rw rw -o rw,relatime || mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
+				;;
+			esac	
+		if [ -e rw/.ubit.preboot ]; then
+			mv rw/.ubit.preboot /tmp/ubit
+			umount rw
+			exit 1
+		fi
+		exit 0
+	}
+
+	mount_rootfs () {
+		[ "$rtype" ] || rtype=auto
+		[ "$rdelay" ] && sleep $rdelay
+		case "$rtype" in
+			"auto")
+				mount $rpath rw || ( sleep 10; mount $rpath rw ) || exit 1
+				;;
+			*)
+				mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || exit 1
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
@@ -193,9 +215,6 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		set - `cat /proc/cmdline`
 		while [ "$1" ]; do
 			case "${1%%=*}" in
-			"root")
-				rpath=${1#*=}
-				;;
 			"rootfstype")
 				rtype=${1#*=}
 				;;
@@ -206,7 +225,13 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			shift
 		done
 
-		if ( ubinfo -d 0 &>/dev/null ) && ( mount_rw ); then
+		if ( ubinfo -d 0 &>/dev/null ) && rpath=`findfs LABEL=rootfs` && ( mount_rootfs ); then
+			# the ramdisk is installed and run from a UBI partition, there is a rootfs volume 
+			startup_date
+			cd rw    # this becomes our new rootfs
+
+		elif ( ubinfo -d 0 &>/dev/null ) && ( mount_rw ); then
+			# the ramdisk is installed and run from a UBI partition and we've been able to load a read/write partition
 			startup_date
 
 			cd rw
@@ -227,6 +252,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				esac
 				reboot -f
 			fi
+
 		elif [ -e /tmp/ubit ]; then # this got set from preboot actions
 			echo Waiting for USB system to stabilise
 			sleep 10
