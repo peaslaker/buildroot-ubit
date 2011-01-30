@@ -171,8 +171,8 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 			touch etc/ubit/images
 
 			# at the moment we propagate the latest firmware, but this may not be desirable in the long run
-		#	find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
-			find . | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
+			find . ! -iname "*.kwb" | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
+		#	find . | cut -d'.' -f 2- | sort > etc/ubit/cpio_list
 
 			# the ssh keys will always be generated on startup
 			{

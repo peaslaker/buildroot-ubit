@@ -18,7 +18,11 @@
 		echo "     - template <targets>  # copy one of the pre-defined targets files into the root filesystem to be used for the scan and generation of UBIFS images"
 		echo "     - tarball             # creates rootfs.tar from a snapshot of the normal mountable running system"
 		echo "     - snapshot            # creates ubifs images and matched installer ramdisk from a snapshot of the normal mountable running system"
+		echo "     - _snapshot            # the first part of the 'snapshot' macro - user commands can modify the image contents prior to image creation in _snapshot_scan"
+		echo "     - _snapshot_scan       # the second part of the 'snapshot' macro"
 		echo "     - prepare             # creates ubifs images and matched installer ramdisk from rootfs.tar.gz (optionally rootfs.tar), modules.tar.gz and boot.tar.gz"
+		echo "     - _prepare            # the first part of the 'prepare' macro - user commands can modify the image contents prior to image creation in _prepare_scan"
+		echo "     - _prepare_scan       # the second part of the 'prepare' macro"
 		echo "     - on <dev> install [mkrw] # sets ubifs images on <dev> to be installed and needs reboot to fulfill the installation"
 		echo
 		echo "Install execution macros (need to be run by ramdisk launched from external install media or in /.ubit.preboot)"
@@ -32,16 +36,18 @@
 		echo "     - install [mkrw]    # flash writes ubifs images. Optionally creates a UBIFS rw partition"
 		echo
 		echo "Firmware installation macros"
-		echo "     - uboot_install <firmware>   # firmware can be one of: goflexnet | dockstar | original/goflexnet | original/dockstar"
+		echo "     - uboot_install <firmware>   # firmware can be one of: goflexnet | dockstar"
 		echo "     - uboot_uptodate             # if you have updated the ramdisk, this brings the U-Boot version up to date"
+		echo "     - uboot_chain                # places the original OE U-Boot in a NAND location for chain booting"
+		echo "     - chain_identify             # identifies the OE U-Boot installed in the chain location"
+		echo "     - chain_revert               # reinstalls the original OE U-Boot from the chain location"
 		echo
 		echo "Boot sequence adjustments"
-		echo "     - nc_off    # switch U-Boot network console off"
-		echo "     - nc_on     # switch U-Boot network console on (default 10.10.10.5)" 
 		echo "     - ubiargs_default   # switch U-Boot read-write partition priority to defaults" 
 		echo "     - ubiargs_tmpfs     # switch U-Boot to use a tmpfs read/write partition" 
-		echo "     - boot_fast          # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
-		echo "     - boot_normal            # switches on boot from UBIFS as the default"
+		echo "     - boot_normal       # switches off boot from UBIFS as the default, allowing boot from HD and USB (sda, default rootfs)"
+		echo "     - boot_fast         # switches on boot from UBIFS as the default"
+		echo "     - boot_silent       # switch U-Boot network console off and immediately boots from UBIFS"
 		echo "     - ethaddr           # sets the 'ethaddr' variable in the bootloader environment.  Mac address will change at random unless forced"
 		echo 
 		echo Generally, the Orange LED is used to signal the degree of activity.  

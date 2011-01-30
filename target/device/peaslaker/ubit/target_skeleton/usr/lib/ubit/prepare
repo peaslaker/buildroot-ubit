@@ -54,9 +54,6 @@
 				prt=ramdisk
 			 	_ubit_ubimg 32
 			)
-
-			cat /etc/ubit/cpio_list | cpio -H newc -o | gzip > /tmp/initramfs.cpio.gz
-			mkimage -A arm -O linux -T ramdisk -C gzip -a 0x0 -e 0x0 -n "UBIT-`cat /etc/br-version`" -d /tmp/initramfs.cpio.gz .ubit/uInstaller
 		fi
 
 		statusled idle

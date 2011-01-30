@@ -9,14 +9,19 @@
 				echo Existing firmware identified as matching: $match 
 				match="${match##*/}"
 				_image="/usr/share/ubit/firmware/${match%%.*}.kwb"
-				if (_image_verify); then
-					echo The installed firmware is already up-to-date
+				if [ -e "${_image}" ]; then
+					if (_image_verify); then
+						echo The installed firmware is already up-to-date
+					else
+						echo Writing latest ${match%%.*} firmware to ${_DEV}
+						_write_checksum
+						_write
+						_write_verify_correct
+					fi
 				else
-					echo Writing latest ${match%%.*} firmware to ${_DEV}
-					_write_checksum
-					_write
-					_write_verify_correct
-				fi
+					echo This ramdisk does not contain the distribution U-Boot firmware image: ${_image}
+					echo The update check cannot complete.
+					fi
 			else
 				echo The existing firmware cannot be identified, so no update has been performed.
 			fi
@@ -28,7 +33,7 @@
 			. /usr/lib/ubit/bootloader
 
 			# sets up a u-boot image in a section of NAND memory in order to allow chain booting
-			_image="$1"
+			_image="/usr/share/ubit/original/$1.kwb"
 			_addr=${_CHAIN_ADDR}
 			_dev=${_CHAIN_DEV}
 
@@ -43,7 +48,17 @@
 		)
 	}
 
-	uboot_revert () {
+	chain_identify () {
+		(
+			. /usr/lib/ubit/bootloader
+
+			_addr=${_CHAIN_ADDR}
+			_dev=${_CHAIN_DEV}
+			( _identify /usr/share/ubit/original )
+		)
+	}
+
+	chain_revert () {
 		(
 			. /usr/lib/ubit/bootloader
 
@@ -82,6 +97,8 @@
 				statusled idle
 				_write_verify_correct
 
+			else
+				echo The requested image was not installed.
 			fi
 		)
 	}
