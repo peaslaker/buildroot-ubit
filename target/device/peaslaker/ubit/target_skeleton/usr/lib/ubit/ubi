@@ -1,8 +1,9 @@
 	_boot_mode () {
 		case $1 in
 			fast|silent|ramdisk)
-				if ( ubinfo -d 0 -N $1 ); then
+				if ( ubinfo -d 0 -N $1 &>/dev/null ); then
 				# do nothing
+					echo boot mode is $1
 				elif ( ubinfo -d 0 -N ramdisk &>/dev/null ); then
 					ubirename /dev/ubi0 ramdisk $1
 				elif ( ubinfo -d 0 -N fast &>/dev/null ); then
