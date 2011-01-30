@@ -5,18 +5,17 @@
 			_addr=${_ADDR}
 			_dev=${_DEV}
 
-			match=`( _valid /usr/share/ubit/original ) || ( _valid /usr/share/ubit/firmware )`	
-			if [ "${match}" ]; then
+			if match=`( _identify /usr/share/ubit/original ) || ( _identify /usr/share/ubit/firmware )`; then	
 				echo Existing firmware identified as matching: $match 
-				_image="${match%%.*}.kwb"
-				_checksum
-				if (_verify); then
+				match="${match##*/}"
+				_image="/usr/share/ubit/firmware/${match%%.*}.kwb"
+				if (_image_verify); then
 					echo The installed firmware is already up-to-date
 				else
 					echo Writing latest ${match%%.*} firmware to ${_DEV}
+					_write_checksum
 					_write
-					( _valid /usr/share/ubit/firmware )
-					_verify_correct
+					_write_verify_correct
 				fi
 			else
 				echo The existing firmware cannot be identified, so no update has been performed.
@@ -37,9 +36,9 @@
 			if [ -e "${_image}" ]; then 
 				echo UBIT.CHAIN:${_image} writing to ${_addr} of ${_dev}
 
-				_checksum
+				_write_checksum
 				_write
-				( _verify )
+				( _write_verify )
 			fi
 		)
 	}
@@ -51,17 +50,16 @@
 			_addr=${_CHAIN_ADDR}
 			_dev=${_CHAIN_DEV}
 
-			if ( _valid /usr/share/ubit/original ); then 
+			if ( _identify /usr/share/ubit/original ); then 
 				( cd /tmp
 
 					_image=$( _backup )
 					_addr=0
 					_dev=${_DEV}
 
-					_checksum
+					_write_checksum
 					_write
-					( _valid /usr/share/ubit/original )
-					_verify_correct
+					_write_verify_correct
 				)
 			fi
 		)
@@ -71,19 +69,18 @@
 		(
 			. /usr/lib/ubit/bootloader
 
-			_image="/usr/share/ubit/firmware/$1"
+			_image="/usr/share/ubit/firmware/$1.kwb"
 			_addr=${_ADDR}
 			_dev=${_DEV}
 
-			_checksum
-			if [ -e "${_image}" ] && ! ( _verify ) ; then
-
+			if [ -e "${_image}" ] && ! ( _image_verify ) ; then
 				statusled active
 				echo UBIT:bl: backing up ${_dev} to $(_backup)
 				echo Keep your u-boot backups safe.
+				_write_checksum
 				_write
 				statusled idle
-				_verify_correct
+				_write_verify_correct
 
 			fi
 		)
