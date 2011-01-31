@@ -4,7 +4,7 @@ UBITVER=v0.5
 UBOOTVER=v2010.09-ubit-${UBITVER}
 KERNVER=v2.6.37-ubit
 
-BOARDS="goflexnet dockstar"
+BOARDS="goflexnet dockstar pinkpogo"
 
 BUILDDIR="../ubit/builds"
 BASEDIR="../ubit/image"
