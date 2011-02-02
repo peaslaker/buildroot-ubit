@@ -92,6 +92,18 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		. /tmp/ubit
 	}
 
+	ubit_rootfs () {
+		cat .ubit.boot > /tmp/ubit 2>/dev/null
+		rm .ubit.boot 2>/dev/null
+
+		(
+			interactive () { statusled ERR ACK; /etc/init.d/rcS; /sbin/init; exit 1; }
+			ubit aufs "cd /root/rw"
+			exit 0
+		)
+		SHUTDOWN=`cat /tmp/shutdown`
+	}
+
 	ubit_aufs () {
 		cat .ubit.boot > /tmp/ubit 2>/dev/null
 		rm .ubit.boot 2>/dev/null
@@ -230,7 +242,20 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			startup_date
 			cd rw    # this becomes our new rootfs
 
-		elif ( ubinfo -d 0 &>/dev/null ) && ( mount_rw ); then
+			if ( ubit_rootfs ); then  
+				statusled on
+			else
+				killall ifplugd; statusled disconnect on; sleep 3; statusled flicker
+				cd ..
+				umount rw
+				sleep 3; statusled off
+				case "$SHUTDOWN" in
+					reboot|halt) $SHUTDOWN -f;;
+				esac
+				reboot -f
+			fi
+
+		elif ( ubinfo -d 0 &>/dev/null ) && ! [ -f /tmp/ubit ] && ( mount_rw ); then
 			# the ramdisk is installed and run from a UBI partition and we've been able to load a read/write partition
 			startup_date
 
