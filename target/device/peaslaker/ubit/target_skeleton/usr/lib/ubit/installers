@@ -25,12 +25,13 @@ kernel_nand_installer () {
 		kernel
 
 		# this sets up the installer script that will run on reboot
-		{ 
+		echo To complete installation, reboot with just the installer disk plugged in and issue the commands:
+		echo
 		echo on /dev/sda1 ready_prepared
 		echo ubiformat_mtd3
 		echo on /dev/sda1 install
-		} > .ubit.boot
-		echo The installer script has been set up at .ubit.boot
+		echo
+		touch /.ubit.boot
 	else
 		echo The download stage failed with a mismatched checksum.  Aborting install
 	fi
@@ -54,12 +55,13 @@ plugbox_nand_installer () {
 		prepare
 
 		# this sets up the installer script that will run on reboot
-		{ 
+		echo To complete installation, reboot with just the installer disk plugged in and issue the commands:
+		echo
 		echo on /dev/sda1 ready_prepared
 		echo ubiformat_mtd3
 		echo on /dev/sda1 install
-		} > .ubit.boot
-		echo The installer script has been set up at .ubit.boot
+		echo
+		touch /.ubit.boot
 	else
 		echo The download stage failed with a mismatched checksum.  Aborting install
 	fi
