@@ -1,3 +1,30 @@
+	uboot_list () {
+		local fw
+		( 	cd /usr/share/ubit
+			for fw in original/*.kwb; do
+				 echo $fw
+			done
+			for fw in firmware/*.kwb; do
+				 echo $fw
+			done
+		)
+	}
+
+	uboot_identify () {
+		(
+			. /usr/lib/ubit/bootloader
+
+			_addr=${_ADDR}
+			_dev=${_DEV}
+
+			if match=`( _identify /usr/share/ubit/original ) || ( _identify /usr/share/ubit/firmware )`; then	
+				echo Existing firmware identified as matching: $match 
+			else
+				echo The existing firmware cannot be identified..
+			fi
+		)
+	}
+
 	uboot_uptodate () {
 		(
 			. /usr/lib/ubit/bootloader
@@ -28,7 +55,7 @@
 		)
 	}
 
-	uboot_chain () {
+	chain_install () {
 		(
 			. /usr/lib/ubit/bootloader
 
