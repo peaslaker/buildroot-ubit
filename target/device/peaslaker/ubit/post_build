@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UBITVER=v0.5
+UBITVER=v0.6
 UBOOTVER=v2010.09-ubit-${UBITVER}
 KERNVER=v2.6.37-ubit-v0.5
 
