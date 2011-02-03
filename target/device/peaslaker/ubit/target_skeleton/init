@@ -360,7 +360,9 @@ else
 		echo '#!/bin/sh' > /sbin/statusled
 		chmod +x /sbin/statusled
 
-		ubit shell
+		export ENV=/usr/lib/ubit/profile/shell
+		. /$ENV
+		. /root/.bashrc
 		ash
 	)
 	kill_env

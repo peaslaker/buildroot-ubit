@@ -21,7 +21,7 @@ kernel_nand_installer () {
 		tar -xzf boot.tar.gz
 	fi
 	# Checksum the source files
-	if ( md5sum -c checksum.md5 ); then
+	if ( md5sum -c checksum.md5 -s ); then
 		kernel
 
 		# this sets up the installer script that will run on reboot
@@ -40,7 +40,7 @@ kernel_nand_installer () {
 plugbox_nand_installer () {
 	_get v0.6/checksum.md5
 
-	if ! ( md5sum -c checksum.md5 ); then
+	if ! ( md5sum -c checksum.md5 -s ); then
 		_get v0.5/v2.6.37/boot.tar.gz
 		_get v0.5/v2.6.37/modules.tar.gz
 		_get v0.6/uInitrd
