@@ -152,9 +152,8 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	mount_rw () {
-		local rpath
-		rpath=$(findfs LABEL=rw)
-		[ "$rpath" ] || rpath=/dev/sda1
+		local rpath=$(findfs LABEL=rw)
+		[ "$rpath" ] || rtype=tmpfs
 		[ "$rtype" ] || rtype=auto
 		[ "$rdelay" ] && sleep $rdelay
 		case "$rtype" in
