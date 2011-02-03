@@ -16,7 +16,8 @@ BRDIR="../buildroot"
 TARGDIR=output/target
 IMAGEDIR=output/images
 
-SKELDIR=target/device/peaslaker/ubit/target_skeleton
+RESOURCEDIR=target/device/peaslaker/ubit
+SKELDIR="${RESOURCEDIR}/target_skeleton"
 FWDIR=usr/share/ubit/firmware
 TARGORIGDIR=${TARGDIR}/usr/share/ubit/original
 
@@ -206,6 +207,7 @@ if ubootize && kernelize; then
 	originalfw_md5
 	fs_additions
 	create_ramdisk
+	cp ${RESOURCEDIR}/start_ubit ${BASEDIR}/start_ubit
 fi
 
 

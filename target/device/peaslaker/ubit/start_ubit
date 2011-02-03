@@ -1,0 +1,66 @@
+#!/bin/sh
+
+unique_tmpdir () {
+	local uniq
+ 	{	
+		uniq=`ls /tmp | md5sum`
+		uniq=${uniq%% *}
+		mkdir "/tmp/${uniq}"
+	} &> /dev/null
+	echo "/tmp/${uniq}"
+}
+
+unpack_and_chroot () {
+	local unpackdir=`unique_tmpdir`
+
+	mount -t tmpfs none "${unpackdir}"
+	if ( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i --no-absolute-filenames ) ||
+	( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i )
+	then
+
+		if [ `which chroot` ]; then
+			echo Entering UBIT environment
+			chroot "${unpackdir}" /init
+			echo Exiting UBIT environment
+		elif [ `which busybox` ]; then
+			echo Entering UBIT environment
+			busybox chroot "$unpackdir" /init
+			echo Exiting UBIT environment
+		else
+			echo Could not find chroot or busybox.  Exiting.
+			fi
+		umount "${unpackdir}"
+		rmdir  "${unpackdir}"
+		exit 0
+	else
+		umount "${unpackdir}"
+		rmdir  "${unpackdir}"
+		exit 1
+	fi
+}
+
+mount_and_chroot() {
+	local mntdir=`unique_tmpdir`
+
+	if ( mount -t ubifs ubi:fast ${mntdir} || mount -t ubifs ubi:silent ${mntdir} || mount -t ubifs ubi:ramdisk ${mntdir} );then
+		if ( 	unpack_and_chroot "${mntdir}/uInitrd" ); then 
+			umount ${mntdir}
+			rmdir ${mntdir}
+			exit 0
+		else
+			umount ${mntdir}
+			rmdir ${mntdir}
+			exit 1
+		fi
+	else
+		exit 1
+	fi
+	}
+
+if ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
+	echo
+else  
+	echo "No installed UBIT ramdisk could be found."
+	echo "'start_ubit' needs to be run from the directory containing the UBIT ramdisk"
+	echo "or on a system with a UBIT ramdisk installed in a UBIFS partition named 'fast', 'silent' or 'ramdisk'"
+fi

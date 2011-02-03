@@ -30,7 +30,10 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		/bin/busybox mount -t sysfs sys	/sys
 		/bin/busybox --install -s
 
-		echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+		if [ "$$" = "1" ]; then
+			echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+		fi
+
 		mkdir /dev/shm
 		/sbin/mdev -s
 		ln -s /proc/mounts /etc/mtab
@@ -39,7 +42,10 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	kill_env () {
-		echo "" > /proc/sys/kernel/hotplug
+		if [ "$$" = "1" ]; then
+			echo "" > /proc/sys/kernel/hotplug
+		fi
+
 		umount /sys
 		umount /proc
 	}
@@ -329,23 +335,33 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 # set a mountpoint into which we will try to switch_root
 setup_env
-statusled busy
-
 mkdir -p /root/rw /tmp
 cd /root
-rootmount
 
-echo "Executing switch_root and spawning init"
-statusled on
+if [ "$$" = "1" ]; then
+	statusled busy
+	rootmount
 
-bootargs=`cat /proc/cmdline`
+	echo "Executing switch_root and spawning init"
+	statusled on
 
-kill_env
-mv /dev/null dev 
-mv /dev/console dev
-mv /dev/tty1 dev 
+	bootargs=`cat /proc/cmdline`
 
-# do or die, the ramdisk hands over to the rootfs
-exec /bin/busybox switch_root . /sbin/init $bootargs
+	kill_env
+	mv /dev/null dev 
+	mv /dev/console dev
+	mv /dev/tty1 dev 
 
+	# do or die, the ramdisk hands over to the rootfs
+	exec /bin/busybox switch_root . /sbin/init $bootargs
+else
+	(
+		echo '#!/bin/sh' > /sbin/statusled
+		chmod +x /sbin/statusled
+
+		ubit shell
+		ash
+	)
+	kill_env
+	fi
 	
