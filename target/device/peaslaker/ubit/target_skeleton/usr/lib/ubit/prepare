@@ -175,6 +175,8 @@
 	_prepare_scan () {
 		(
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
+			cat /usr/share/ubit/start_ubit > ".ubit/rootfs/sbin/start_ubit"
+			chmod u+x ".ubit/rootfs/sbin/start_ubit"
 			_ubit_scan boot modules rootfs
 			ready_prepared
 		)

@@ -18,8 +18,9 @@ IMAGEDIR=output/images
 
 RESOURCEDIR=target/device/peaslaker/ubit
 SKELDIR="${RESOURCEDIR}/target_skeleton"
-FWDIR=usr/share/ubit/firmware
-TARGORIGDIR=${TARGDIR}/usr/share/ubit/original
+SHAREDIR=usr/share/ubit
+FWDIR=${SHAREDIR}/firmware
+TARGORIGDIR=${TARGDIR}/${SHAREDIR}/original
 
 TARGFWDIR=${TARGDIR}/${FWDIR}
 SKELFWDIR=${SKELDIR}/${FWDIR}
@@ -208,6 +209,8 @@ if ubootize && kernelize; then
 	fs_additions
 	create_ramdisk
 	cp ${RESOURCEDIR}/start_ubit ${BASEDIR}/start_ubit
+	cp ${RESOURCEDIR}/start_ubit ${TARGDIR}/${SHAREDIR}/start_ubit
+	chmod u+x ${TARGDIR}/${SHAREDIR}/start_ubit
 fi
 
 
