@@ -4,4 +4,3 @@
 . /usr/lib/ubit/bootargs
 . /usr/lib/ubit/prepare
 . /usr/lib/ubit/ubi
-. /usr/lib/ubit/installers

@@ -169,7 +169,8 @@
 		mkdir -p "${OUTDIR}.ubit/rootfs" "${OUTDIR}.prt"
 
 		echo UBIT.PREPARE:extracting rootfs...
-		tar -C "${OUTDIR}.ubit/rootfs" -xf rootfs.tar || tar -C "${OUTDIR}.ubit/rootfs" -xzf rootfs.tar.gz
+		
+		tar -C "${OUTDIR}.ubit/rootfs" -xf "${1}" || tar -C "${OUTDIR}.ubit/rootfs" -xzf "${1}"
 	}
 
 	_prepare_scan () {

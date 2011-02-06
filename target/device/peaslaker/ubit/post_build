@@ -64,14 +64,6 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 					INSTALL_MOD_PATH=${STAGEDIR} make modules_install
 					kver=`ls ${STAGEDIR}/lib/modules`
 
-					mkdir -p ${STAGEDIR}/usr/src/$kver/usr
-					(
-						cd ${STAGEDIR}/usr/src
-						ln -sf $kver linux-2.6
-					)
-
-					make headers_install INSTALL_HDR_PATH=${STAGEDIR}/usr/src/$kver/usr
-
 					mkdir -p ${STAGEDIR}/boot/$kver
 
 					cp arch/arm/boot/uImage ${STAGEDIR}/boot/$kver/
@@ -82,6 +74,11 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 						ln -sf boot/uImage uImage
 						echo "`md5sum ./$kver/uImage`" 
 					) > ${KERNNAME}/uImage.md5
+					mkdir -p ${STAGEDIR}/usr/src
+					(
+						cd ${STAGEDIR}/usr/src
+						ln -sf ../../lib/modules/$kver/build linux-2.6
+					)
 
 					tar -C ${STAGEDIR}/boot -c . -zf "${KERNNAME}/boot.tar.gz"
 					tar -C ${STAGEDIR} -c lib usr -zf "${KERNNAME}/modules.tar.gz"
