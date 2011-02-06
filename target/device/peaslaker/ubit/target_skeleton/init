@@ -302,28 +302,10 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			reboot -f
 
 		else # we are in maintenance mode
-			echo Waiting for USB system to stabilise
-			sleep 10
-
 			startup_date
 			/etc/init.d/rcS
 
-			echo mounting whatever we find on /dev/sda1
-			mount /dev/sda1 rw
-			(	
-				cd rw
-				echo halt > /tmp/shutdown
-				ubit_full
-			)
-			umount /dev/sda1
-
-			case "$SHUTDOWN" in
-				reboot|halt) 
-					killall ifplugd; statusled disconnect on; sleep 3; statusled off
-					$SHUTDOWN -f;;
-			esac
-
-			echo interactive > .ubit.installer
+			echo interactive > /tmp/ubit
 			ubit_full
 
 			killall ifplugd; statusled disconnect on; sleep 3; statusled off
