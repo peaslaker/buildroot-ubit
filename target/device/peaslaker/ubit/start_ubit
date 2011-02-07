@@ -13,6 +13,8 @@ unique_tmpdir () {
 unpack_and_chroot () {
 	local unpackdir=`unique_tmpdir`
 
+	PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
 	mount -t tmpfs none "${unpackdir}"
 	if ( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i --no-absolute-filenames ) ||
 	( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i )
@@ -57,7 +59,9 @@ mount_and_chroot() {
 	fi
 	}
 
-if ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
+if ! [ "`whoami`" = "root" ]; then
+	echo "Must be 'root' to run 'start_ubit'"
+elif ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
 	echo
 else  
 	echo "No installed UBIT ramdisk could be found."
