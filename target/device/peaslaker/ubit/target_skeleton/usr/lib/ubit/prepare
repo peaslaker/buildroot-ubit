@@ -156,6 +156,8 @@
 	}
 
 	_prepare () {
+		local tarball="${1}"
+		[ "${tarball}" ] || tarball=rootfs.tar.gz
 		if [ -e .ubit.targets ]; then
 			cat .ubit.targets > /tmp/targets
 		else
@@ -170,7 +172,7 @@
 
 		echo UBIT.PREPARE:extracting rootfs...
 		
-		tar -C "${OUTDIR}.ubit/rootfs" -xf "${1}" || tar -C "${OUTDIR}.ubit/rootfs" -xzf "${1}"
+		tar -C "${OUTDIR}.ubit/rootfs" -xf "${tarball}" || tar -C "${OUTDIR}.ubit/rootfs" -xzf "${tarball}"
 	}
 
 	_prepare_scan () {
@@ -185,6 +187,6 @@
 	}
 
 	prepare () {
-		_prepare
+		_prepare "${1}"
 		_prepare_scan
 	}

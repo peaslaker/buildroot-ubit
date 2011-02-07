@@ -73,6 +73,8 @@
 		}
 
 	tarball () {
+		local tarball="$1"
+		[ "${tarball}" ] || tarball=rootfs
 		statusled progress			# this is about to take a long time
 
 		# Because busybox tar is very limited we have to jump through hoops to prevent our tarball copy from recursing
@@ -85,7 +87,7 @@
 
 		echo UBIT.TARBALL:extracting rootfs...
 		tar -c . --exclude "${uniq}" -f "${OUTDIR}${uniq}"
-		mv "${OUTDIR}${uniq}" ${OUTDIR}rootfs.tar 
+		mv "${OUTDIR}${uniq}" ${OUTDIR}${tarball}.tar 
 
 		umount boot
 		statusled idle
