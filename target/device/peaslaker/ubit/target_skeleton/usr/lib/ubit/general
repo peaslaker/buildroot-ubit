@@ -66,3 +66,24 @@
 		}
 
 
+unpack_and_cd () {
+	local uniq
+	uniq=`ls /tmp | md5sum`
+	uniq=${uniq%% *}
+	mkdir "/tmp/${uniq}"
+
+	local packedrd=${1}
+	[ "${1}" ] || set `pwd`
+	[ -d "${1}" ] && packedrd="${1}/uInitrd"
+
+	mount -t tmpfs none "${uniq}"
+	if ( 	cd "${uniq}"; dd if="${packedrd}" bs=64 skip=1 | gunzip | cpio -i --no-absolute-filenames ) ||
+	( 	cd "${uniq}"; dd if="${packedrd}" bs=64 skip=1 | gunzip | cpio -i )
+	then
+		cd "${uniq}"
+	else
+		[ -d "${1}" ] && umount "${1}"
+		umount "${uniq}"
+		rmdir  "${uniq}"
+	fi
+}

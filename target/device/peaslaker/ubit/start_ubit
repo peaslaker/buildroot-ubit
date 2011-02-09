@@ -12,21 +12,18 @@ unique_tmpdir () {
 
 unpack_and_chroot () {
 	local unpackdir=`unique_tmpdir`
+	local packedrd=${1}
+	[ -d "${1}" ] && packedrd="${1}/uInitrd"
 
 	PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 	mount -t tmpfs none "${unpackdir}"
-	if ( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i --no-absolute-filenames ) ||
-	( 	cd "${unpackdir}"; dd if="${1}" bs=64 skip=1 | gunzip | cpio -i )
+	if ( 	cd "${unpackdir}"; dd if="${packedrd}" bs=64 skip=1 | gunzip | cpio -i --no-absolute-filenames ) ||
+	( 	cd "${unpackdir}"; dd if="${packedrd}" bs=64 skip=1 | gunzip | cpio -i )
 	then
-
-		if [ `which chroot` ]; then
-			echo Entering UBIT environment
-			chroot "${unpackdir}" /init
-			echo Exiting UBIT environment
-		elif [ `which busybox` ]; then
-			echo Entering UBIT environment
-			busybox chroot "$unpackdir" /init
+		[ -d "${1}" ] && umount "${1}"
+		echo Entering UBIT environment
+		if ( chroot "${unpackdir}" /start || busybox chroot "$unpackdir" /start ); then
 			echo Exiting UBIT environment
 		else
 			echo Could not find chroot or busybox.  Exiting.
@@ -35,6 +32,7 @@ unpack_and_chroot () {
 		rmdir  "${unpackdir}"
 		exit 0
 	else
+		[ -d "${1}" ] && umount "${1}"
 		umount "${unpackdir}"
 		rmdir  "${unpackdir}"
 		exit 1
@@ -45,12 +43,10 @@ mount_and_chroot() {
 	local mntdir=`unique_tmpdir`
 
 	if ( mount -t ubifs ubi:fast ${mntdir} || mount -t ubifs ubi:silent ${mntdir} || mount -t ubifs ubi:ramdisk ${mntdir} );then
-		if ( 	unpack_and_chroot "${mntdir}/uInitrd" ); then 
-			umount ${mntdir}
+		if ( 	unpack_and_chroot "${mntdir}" ); then 
 			rmdir ${mntdir}
 			exit 0
 		else
-			umount ${mntdir}
 			rmdir ${mntdir}
 			exit 1
 		fi
@@ -59,9 +55,7 @@ mount_and_chroot() {
 	fi
 	}
 
-if ! [ "`whoami`" = "root" ]; then
-	echo "Must be 'root' to run 'start_ubit'"
-elif ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
+if ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
 	echo
 else  
 	echo "No installed UBIT ramdisk could be found."

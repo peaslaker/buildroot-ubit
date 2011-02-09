@@ -1,0 +1,36 @@
+#!/bin/ash
+# We first set up the environment
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+
+	setup_env () {
+		/bin/busybox mount -t proc proc	/proc	
+		/bin/busybox mount -t sysfs sys	/sys
+		/bin/busybox --install -s
+
+		mkdir -p /dev/shm
+		/sbin/mdev -s
+		ln -s /proc/mounts /etc/mtab
+
+		hostname -F /etc/hostname
+	}
+
+	kill_env () {
+		umount /sys
+		umount /proc
+		rm /etc/mtab
+	}
+
+setup_env
+mkdir -p /root/rw /tmp
+cd /root
+
+(
+	echo '#!/bin/sh' > /sbin/statusled
+	chmod +x /sbin/statusled
+	export ENV=/usr/lib/ubit/profile/shell
+	. /$ENV
+	. /root/.bashrc
+	ash
+)
+kill_env
+

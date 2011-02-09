@@ -140,8 +140,8 @@ SKELFWDIR=${SKELDIR}/${FWDIR}
 					echo "${md5}" > ${BRDIR}/${SKELFWDIR}/${bd}.${builddate}-${shorthead}.kwb.md5
 					echo "${md5}" > ${BRDIR}/${TARGFWDIR}/${bd}.${builddate}-${shorthead}.kwb.md5
 					cat ${KWBNAME} > "${BRDIR}/${TARGFWDIR}/${bd}.kwb"
-					cat ${KWBNAME} | dd bs=512K count=1 conv=sync  > "${BASEDIR}/${bd}.kwb"
-					cat ${BASEDIR}/${bd}.kwb | md5sum > ${BASEDIR}/valid.${bd}.md5
+#					cat ${KWBNAME} | dd bs=512K count=1 conv=sync  > "${BASEDIR}/${bd}.kwb"
+#					cat ${BASEDIR}/${bd}.kwb | md5sum > ${BASEDIR}/valid.${bd}.md5
 				done
 			else
 				echo "The U-Boot version ${UBOOTVER} could not be found in the repository"
@@ -206,8 +206,9 @@ if ubootize && kernelize; then
 	fs_additions
 	create_ramdisk
 	cp ${RESOURCEDIR}/start_ubit ${BASEDIR}/start_ubit
+	chmod 744 ${BASEDIR}/start_ubit
 	cp ${RESOURCEDIR}/start_ubit ${TARGDIR}/${SHAREDIR}/start_ubit
-	chmod u+x ${TARGDIR}/${SHAREDIR}/start_ubit
+	chmod 744 ${TARGDIR}/${SHAREDIR}/start_ubit
 fi
 
 

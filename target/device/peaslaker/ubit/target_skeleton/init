@@ -30,9 +30,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		/bin/busybox mount -t sysfs sys	/sys
 		/bin/busybox --install -s
 
-		if [ "$$" = "1" ]; then
-			echo "/sbin/mdev" > /proc/sys/kernel/hotplug
-		fi
+		echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 
 		mkdir /dev/shm
 		/sbin/mdev -s
@@ -42,9 +40,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	}
 
 	kill_env () {
-		if [ "$$" = "1" ]; then
-			echo "" > /proc/sys/kernel/hotplug
-		fi
+		echo "" > /proc/sys/kernel/hotplug
 
 		umount /sys
 		umount /proc
@@ -80,7 +76,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 	ubit () {
 		export ENV=/usr/lib/ubit/profile/$1
-		touch /tmp/shutdown
+		touch /tmp/exitcmd
 		touch /tmp/ubit
 		shift
 		{ 
@@ -88,61 +84,35 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			echo . $ENV
 			echo . /root/.bashrc
 			echo 'finished () { set `pidof init`; shift $(($#-2)); kill -9 $1; }'
-			echo 'reboot () { echo reboot > /tmp/shutdown; finished; }'
-			echo 'halt () { echo halt > /tmp/shutdown; finished; }'
+			echo 'preboot () { [ -x "./init" ] && echo preboot `pwd` > /tmp/exitcmd; finished; }'
+			echo 'reboot () { echo reboot > /tmp/exitcmd; finished; }'
+			echo 'halt () { echo halt > /tmp/exitcmd; finished; }'
 			echo "$@"
 		} > /root/.profile 
-		reboot() { echo reboot > /tmp/shutdown; exit 1; }
-		halt() { echo halt > /tmp/shutdown; exit 1; }
 		. ${ENV}
-		. /tmp/ubit
+		/etc/init.d/rcS; statusled ERR ACK; /sbin/init; EXITCMD=`cat /tmp/exitcmd`
 	}
 
 	ubit_rootfs () {
-		[ -e .ubit.boot ] && echo interactive > /tmp/ubit
-		rm .ubit.boot 2>/dev/null
-
-		(
-			interactive () { statusled ERR ACK; /etc/init.d/rcS; /sbin/init; exit 1; }
-			ubit aufs "cd /root/rw"
-			exit 0
-		)
-		SHUTDOWN=`cat /tmp/shutdown`
+		[ -e .ubit.boot ] || exit 0
+		rm .ubit.boot
+		ubit aufs "cd /root/rw" ; exit 1
 	}
 
 	ubit_aufs () {
-		[ -e .ubit.boot ] && echo interactive > /tmp/ubit
-		rm .ubit.boot 2>/dev/null
-
-		(
-			interactive () { statusled ERR ACK; /etc/init.d/rcS; /sbin/init; exit 1; }
-			ubit aufs "cd /root/newroot"
-			exit 0
-		)
-		SHUTDOWN=`cat /tmp/shutdown`
+		[ -e .ubit.boot ] || exit 0
+		rm .ubit.boot
+		ubit aufs "cd /root/newroot"; exit 1
 	}
 
 	ubit_full () {
-		[ -e .ubit.boot ] && echo interactive > /tmp/ubit
 		rm .ubit.boot 2>/dev/null
-
-		(
-			interactive () { statusled ERR ACK; /sbin/init; exit 1; }
-			ubit full
-			exit 0
-		)
-		SHUTDOWN=`cat /tmp/shutdown`
+		ubit full
 	}
 
 	ubit_preboot () {
-		(
-			interactive () { statusled ERR ACK; /sbin/init; exit 1; }
-			ubit full
-			exit 0
-		)
-		SHUTDOWN=`cat /tmp/shutdown`
+		ubit full
 	}
-
 
 	move_mounts () {
 		for p ; do
@@ -158,7 +128,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		[ "$rdelay" ] && sleep $rdelay
 		case "$rtype" in
 			"tmpfs")
-				mount -t tmpfs none rw
+				mount -t ubifs ubi:rw rw -o rw,relatime || mount -t tmpfs none rw
 				;;
 			"auto")
 				mount -t ubifs ubi:rw rw -o rw,relatime || mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
@@ -168,7 +138,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
-			echo interactive > /tmp/ubit
+			touch /tmp/ubit
 			rm rw/.ubit.preboot 2>/dev/null
 			umount rw
 			exit 1
@@ -188,7 +158,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
-			echo interactive > /tmp/ubit
+			touch /tmp/ubit
 			rm rw/.ubit.preboot 2>/dev/null
 			umount rw
 			exit 1
@@ -230,6 +200,14 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		[ -e /etc/ubit/extramounts ] && . /etc/ubit/extramounts
 	}
 
+	preboot () {
+		cd "${1}"
+		kill_env
+
+		# do or die, the ramdisk hands over to the rootfs
+		exec /bin/busybox switch_root . /init
+	}
+
 	rootmount () {
 		set - `cat /proc/cmdline`
 		while [ "$1" ]; do
@@ -256,13 +234,13 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				cd ..
 				umount rw
 				sleep 3; statusled off
-				case "$SHUTDOWN" in
-					reboot|halt) $SHUTDOWN -f;;
+				case "$EXITCMD" in
+					reboot|halt) $EXITCMD -f;;
 				esac
 				reboot -f
 			fi
 
-		elif ( ubinfo -d 0 &>/dev/null ) && ! [ -f /tmp/ubit ] && ( mount_rw ); then
+		elif ( ubinfo -d 0 &>/dev/null ) && ! [ -e /tmp/ubit ] && ( mount_rw ); then
 			# the ramdisk is installed and run from a UBI partition and we've been able to load a read/write partition
 			startup_date
 
@@ -271,7 +249,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
 			# we process any ubit script now but we limit the options
 			# because we have a mounted aufs partition.
-			echo reboot > /tmp/shutdown
+			echo reboot > /tmp/exitcmd
 			if ( ubit_aufs ); then  
 				statusled on
 				mount_finalize
@@ -279,40 +257,35 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				killall ifplugd; statusled disconnect on; sleep 3; statusled flicker
 				mount_dismantle
 				sleep 3; statusled off
-				case "$SHUTDOWN" in
-					reboot|halt) $SHUTDOWN -f;;
+				case "$EXITCMD" in
+					reboot|halt) $EXITCMD -f;;
+					preboot*) $EXITCMD;;
 				esac
 				reboot -f
 			fi
 
 		elif [ -e /tmp/ubit ]; then # this got set from preboot actions
-			echo Waiting for USB system to stabilise
-			sleep 10
-
 			startup_date
-			/etc/init.d/rcS
 
-			echo reboot > /tmp/shutdown
+			echo reboot > /tmp/exitcmd
 			ubit_preboot
 
 			killall ifplugd; statusled disconnect on; sleep 3; statusled off
-			case "$SHUTDOWN" in
-				reboot|halt) $SHUTDOWN -f;;
+			case "$EXITCMD" in
+				reboot|halt) $EXITCMD -f;;
 			esac
 			reboot -f
 
 		else # we are in maintenance mode
 			startup_date
-			/etc/init.d/rcS
 
-			echo interactive > /tmp/ubit
 			ubit_full
 
 			killall ifplugd; statusled disconnect on; sleep 3; statusled off
-			case "$SHUTDOWN" in
-				reboot) reboot -f;;
+			case "$EXITCMD" in
+				reboot|halt) $EXITCMD -f;;
 			esac
-			halt -f
+			reboot -f
 		fi
 	}
 
@@ -321,32 +294,19 @@ setup_env
 mkdir -p /root/rw /tmp
 cd /root
 
-if [ "$$" = "1" ]; then
-	statusled busy
-	rootmount
+statusled busy
+rootmount
 
-	echo "Executing switch_root and spawning init"
-	statusled on
+echo "Executing switch_root and spawning init"
+statusled on
 
-	bootargs=`cat /proc/cmdline`
+bootargs=`cat /proc/cmdline`
 
-	kill_env
-	mv /dev/null dev 
-	mv /dev/console dev
-	mv /dev/tty1 dev 
+kill_env
+mv /dev/null dev 
+mv /dev/console dev
+mv /dev/tty1 dev 
 
-	# do or die, the ramdisk hands over to the rootfs
-	exec /bin/busybox switch_root . /sbin/init $bootargs
-else
-	(
-		echo '#!/bin/sh' > /sbin/statusled
-		chmod +x /sbin/statusled
-
-		export ENV=/usr/lib/ubit/profile/shell
-		. /$ENV
-		. /root/.bashrc
-		ash
-	)
-	kill_env
-	fi
+# do or die, the ramdisk hands over to the rootfs
+exec /bin/busybox switch_root . /sbin/init $bootargs
 	
