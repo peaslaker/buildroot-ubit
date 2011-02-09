@@ -77,7 +77,6 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 	ubit () {
 		export ENV=/usr/lib/ubit/profile/$1
 		touch /tmp/exitcmd
-		touch /tmp/ubit
 		shift
 		{ 
 			echo export ENV=$ENV
@@ -133,14 +132,19 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 			"auto")
 				mount -t ubifs ubi:rw rw -o rw,relatime || mount $rpath rw || ( sleep 10; mount $rpath rw ) || mount -t tmpfs none rw
 				;;
+			"preboot")
+				ubirename /dev/ubi0 preboot ramdisk
+				touch /tmp/preboot
+				exit 1
+				;;
 			*)
 				mount -t ubifs ubi:rw rw -o rw,relatime || mount -t $rtype $rpath rw || ( sleep 10 ; mount -t $rtype $rpath rw ) || mount -t tmpfs none rw
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
-			touch /tmp/ubit
 			rm rw/.ubit.preboot 2>/dev/null
 			umount rw
+			touch /tmp/preboot
 			exit 1
 		fi
 		exit 0
@@ -158,9 +162,9 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				;;
 			esac	
 		if [ -e rw/.ubit.preboot ]; then
-			touch /tmp/ubit
 			rm rw/.ubit.preboot 2>/dev/null
 			umount rw
+			touch /tmp/preboot
 			exit 1
 		fi
 		exit 0
@@ -200,7 +204,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 		[ -e /etc/ubit/extramounts ] && . /etc/ubit/extramounts
 	}
 
-	preboot () {
+	_preboot () {
 		cd "${1}"
 		kill_env
 
@@ -240,7 +244,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				reboot -f
 			fi
 
-		elif ( ubinfo -d 0 &>/dev/null ) && ! [ -e /tmp/ubit ] && ( mount_rw ); then
+		elif ( ubinfo -d 0 &>/dev/null ) && ! [ -e /tmp/preboot ] && ( mount_rw ); then
 			# the ramdisk is installed and run from a UBI partition and we've been able to load a read/write partition
 			startup_date
 
@@ -264,7 +268,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 				reboot -f
 			fi
 
-		elif [ -e /tmp/ubit ]; then # this got set from preboot actions
+		elif [-e /tmp/preboot ]; then # this got set from preboot actions
 			startup_date
 
 			echo reboot > /tmp/exitcmd

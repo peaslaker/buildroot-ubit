@@ -56,8 +56,8 @@
 	_snapshot_scan () {
 		(
 			[ "${OUTDIR}" ] && cd "${OUTDIR}"
-			cat /usr/share/ubit/start_ubit > .ubit/rootfs/sbin/start_ubit
-			chmod 744 .ubit/rootfs/sbin/start_ubit
+			cat /usr/share/ubit/ubit_start > .ubit/rootfs/sbin/ubit_start
+			chmod 744 .ubit/rootfs/sbin/ubit_start
 			_ubit_scan boot modules rootfs
 			ready_prepared
 		)

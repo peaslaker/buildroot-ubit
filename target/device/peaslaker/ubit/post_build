@@ -205,10 +205,9 @@ if ubootize && kernelize; then
 	originalfw_md5
 	fs_additions
 	create_ramdisk
-	cp ${RESOURCEDIR}/start_ubit ${BASEDIR}/start_ubit
-	chmod 744 ${BASEDIR}/start_ubit
-	cp ${RESOURCEDIR}/start_ubit ${TARGDIR}/${SHAREDIR}/start_ubit
-	chmod 744 ${TARGDIR}/${SHAREDIR}/start_ubit
+	cp ${TARGDIR}/${SHAREDIR}/ubit_start ${BASEDIR}/ubit_start
+	chmod 744 ${TARGDIR}/${SHAREDIR}/ubit_start
+	chmod 744 ${BASEDIR}/ubit_start
 fi
 
 

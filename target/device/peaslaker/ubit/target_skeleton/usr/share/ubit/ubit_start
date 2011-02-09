@@ -42,8 +42,8 @@ unpack_and_chroot () {
 mount_and_chroot() {
 	local mntdir=`unique_tmpdir`
 
-	if ( mount -t ubifs ubi:fast ${mntdir} || mount -t ubifs ubi:silent ${mntdir} || mount -t ubifs ubi:ramdisk ${mntdir} );then
-		if ( 	unpack_and_chroot "${mntdir}" ); then 
+	if ( mount -t ubifs ubi:fast ${mntdir} || mount -t ubifs ubi:silent ${mntdir} || mount -t ubifs ubi:ramdisk ${mntdir} || mount -t ubifs ubi:preboot ${mntdir});then
+			if ( 	unpack_and_chroot "${mntdir}" ); then 
 			rmdir ${mntdir}
 			exit 0
 		else
@@ -60,5 +60,5 @@ if ( unpack_and_chroot "$(pwd)/uInitrd" ) || ( mount_and_chroot ); then
 else  
 	echo "No installed UBIT ramdisk could be found."
 	echo "'start_ubit' needs to be run from the directory containing the UBIT ramdisk"
-	echo "or on a system with a UBIT ramdisk installed in a UBIFS partition named 'fast', 'silent' or 'ramdisk'"
+	echo "or on a system with a UBIT ramdisk installed in a UBIFS partition named 'fast', 'silent', 'preboot' or 'ramdisk'"
 fi
